@@ -1,0 +1,110 @@
+{
+  "schemaVersion": "1.0",
+  "database": "Cloud Firestore",
+  "project": "Advance Check",
+  "collections": {
+    "administradores": {
+      "documentId": "string (UID do Firebase Auth)",
+      "fields": {
+        "nome": "string",
+        "ativo": "boolean"
+      }
+    },
+    "assistencia": {
+      "fields": {
+        "email": "string",
+        "nome": "string"
+      }
+    },
+    "promotores": {
+      "fields": {
+        "email": "string",
+        "nome": "string"
+      }
+    },
+    "clientes": {
+      "fields": {
+        "codigoCnpj": "string | null",
+        "nome": "string",
+        "cidade": "string",
+        "uf": "string",
+        "enderecoCompleto": "string",
+        "lat": "number",
+        "lng": "number",
+        "status": "string",
+        "criadoEm": "timestamp",
+        "atualizadoEm": "timestamp",
+        "criadoPor": "string (condicional)"
+      }
+    },
+    "atividades": {
+      "fields": {
+        "tipo": "string",
+        "data": "timestamp",
+        "ptvId": "string",
+        "clienteId": "string",
+        "tipoVisita": "string",
+        "nota": "string",
+        "status": "string",
+        "criadoEm": "timestamp",
+        "atualizadoEm": "timestamp",
+        "checkinDataHora": "timestamp (condicional)",
+        "checkinGps": "string (condicional)",
+        "checkinGpsAccuracy": "number (condicional)",
+        "checkinEndereco": "string (condicional)",
+        "relatorioId": "string (condicional)",
+        "checkoutDataHora": "timestamp (condicional)",
+        "checkoutGps": "string (condicional)",
+        "checkoutGpsAccuracy": "number (condicional)",
+        "checkoutEndereco": "string (condicional)",
+        "objetivo": "string (visita técnica)",
+        "oportunidadeIdentificada": "string (visita técnica)",
+        "categoriaTreinamento": "string (treinamento)",
+        "quantidadeParticipantes": "number (treinamento)",
+        "publicoAtendido": "string (treinamento)",
+        "resultado": "string (fechamento manual)",
+        "fechamentoTipo": "string (fechamento manual)",
+        "fechamentoAnaliseStatus": "string (fechamento manual)",
+        "motivoFechamentoManual": "string (fechamento manual)",
+        "fechamentoSolicitadoEm": "timestamp (fechamento manual)",
+        "fechamentoSolicitadoPor": "string (fechamento manual)"
+      }
+    },
+    "relatorios": {
+      "fields": {
+        "id": "string",
+        "atividadeId": "string",
+        "clienteId": "string",
+        "ptvId": "string",
+        "codigo": "string",
+        "textoAtual": "string",
+        "historico": "array<object>",
+        "criadoEm": "timestamp",
+        "atualizadoEm": "timestamp",
+        "tipoVisita": "string (condicional)",
+        "checkoutDataHora": "timestamp (condicional)",
+        "checkoutGps": "string (condicional)",
+        "checkoutGpsAccuracy": "number (condicional)",
+        "checkoutEndereco": "string (condicional)",
+        "objetivo": "string (condicional)",
+        "oportunidadeIdentificada": "string (condicional)",
+        "categoriaTreinamento": "string (condicional)",
+        "quantidadeParticipantes": "number (condicional)",
+        "publicoAtendido": "string (condicional)",
+        "resultado": "string (condicional)",
+        "fechamentoTipo": "string (condicional)",
+        "fechamentoAnaliseStatus": "string (condicional)",
+        "motivoFechamentoManual": "string (condicional)",
+        "fechamentoSolicitadoEm": "timestamp (condicional)",
+        "fechamentoSolicitadoPor": "string (condicional)"
+      }
+    },
+    "atividades_excluidas": {
+      "fields": {
+        "excluidoEm": "timestamp",
+        "excluidoPor": "string",
+        "demaisCampos": "cópia de atividades"
+      }
+    }
+  }
+}
