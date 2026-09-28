@@ -1,0 +1,11 @@
+{
+  "name": "Advance Admin",
+  "short_name": "Advance Admin",
+  "description": "Painel administrativo do Advance Check.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F9F9FA",
+  "theme_color": "#FFFFFF",
+  "orientation": "landscape"
+}
