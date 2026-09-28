@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#FFFFFF">
+    <title>Advance Admin</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/svg+xml" href="midia/logo-advancecheck.svg">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="login-screen" class="login-screen">
+        <div class="login-panel">
+            <img class="brand-logo" src="midia/logo-advancecheck.svg" alt="Advance Check">
+            <span class="eyebrow">PAINEL ADMINISTRATIVO</span>
+            <h1>Acesso administrativo</h1>
+            <p>Use uma conta autorizada para acessar os dados do Advance Check.</p>
+            <form id="login-form" class="login-form">
+                <label>E-mail<input id="login-email" type="email" autocomplete="email" required></label>
+                <label>Senha<input id="login-password" type="password" autocomplete="current-password" required></label>
+                <button id="login-button" class="primary-button" type="submit">Entrar</button>
+                <p id="login-message" class="form-message" role="alert"></p>
+            </form>
+        </div>
+    </div>
+
+    <div id="admin-screen" class="admin-screen" hidden>
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <img src="midia/logo-advancecheck.svg" alt="Advance Check">
+                <span>ADMIN</span>
+            </div>
+            <nav class="sidebar-nav" aria-label="Navegação principal">
+                <button class="nav-link active" data-section="overview"><span class="nav-icon">⌂</span>Visão geral</button>
+                <button class="nav-link" data-section="visits"><span class="nav-icon">◫</span>Visitas</button>
+                <button class="nav-link" data-section="clients"><span class="nav-icon">□</span>Clientes</button>
+                <button class="nav-link" data-section="people"><span class="nav-icon">○</span>Profissionais</button>
+                <button class="nav-link" data-section="reports"><span class="nav-icon">≡</span>Relatórios</button>
+            </nav>
+            <button id="logout-button" class="nav-link nav-danger"><span class="nav-icon">↪</span>Sair</button>
+        </aside>
+
+        <main class="content">
+            <header class="topbar">
+                <div><span class="eyebrow">ADVANCE CHECK</span><h1 id="page-title">Visão geral</h1></div>
+                <div class="user-chip"><strong id="user-name">Administrador</strong><span id="user-email"></span></div>
+            </header>
+
+            <div id="global-message" class="inline-message" hidden></div>
+
+            <section id="section-overview" class="page-section active-section">
+                <div class="metrics-grid">
+                    <article class="metric-card"><span>Clientes ativos</span><strong id="metric-clients">—</strong></article>
+                    <article class="metric-card"><span>Visitas pendentes</span><strong id="metric-pending">—</strong></article>
+                    <article class="metric-card"><span>Em andamento</span><strong id="metric-progress">—</strong></article>
+                    <article class="metric-card"><span>Concluídas</span><strong id="metric-completed">—</strong></article>
+                    <article class="metric-card"><span>Relatórios</span><strong id="metric-reports">—</strong></article>
+                </div>
+                <div class="section-grid">
+                    <section class="panel">
+                        <div class="panel-head"><div><span class="eyebrow">ATIVIDADES</span><h2>Visitas recentes</h2></div><button class="text-button" data-section-link="visits">Ver todas</button></div>
+                        <div class="table-wrap"><table><thead><tr><th>Cliente</th><th>Tipo</th><th>Status</th><th>Data</th></tr></thead><tbody id="recent-visits"><tr><td colspan="4" class="empty-row">Carregando...</td></tr></tbody></table></div>
+                    </section>
+                    <section class="panel">
+                        <div class="panel-head"><div><span class="eyebrow">BANCO</span><h2>Estrutura conectada</h2></div></div>
+                        <div class="database-list">
+                            <div><span>clientes</span><strong>Firestore</strong></div>
+                            <div><span>atividades</span><strong>Firestore</strong></div>
+                            <div><span>relatorios</span><strong>Firestore</strong></div>
+                            <div><span>assistencia</span><strong>Firestore</strong></div>
+                            <div><span>promotores</span><strong>Firestore</strong></div>
+                            <div><span>atividades_excluidas</span><strong>Firestore</strong></div>
+                        </div>
+                    </section>
+                </div>
+            </section>
+
+            <section id="section-visits" class="page-section">
+                <div class="section-title-row"><div><span class="eyebrow">FIRESTORE / ATIVIDADES</span><h2>Visitas</h2></div><button class="secondary-button" id="refresh-visits">Atualizar</button></div>
+                <section class="panel"><div class="table-wrap"><table><thead><tr><th>ID</th><th>Cliente</th><th>Tipo</th><th>Status</th><th>Data</th><th>Responsável</th></tr></thead><tbody id="visits-table"><tr><td colspan="6" class="empty-row">Carregando...</td></tr></tbody></table></div></section>
+            </section>
+
+            <section id="section-clients" class="page-section">
+                <div class="section-title-row"><div><span class="eyebrow">FIRESTORE / CLIENTES</span><h2>Clientes</h2></div><button class="secondary-button" id="refresh-clients">Atualizar</button></div>
+                <section class="panel"><div class="table-wrap"><table><thead><tr><th>ID</th><th>Nome</th><th>Cidade</th><th>UF</th><th>Status</th><th>CNPJ</th></tr></thead><tbody id="clients-table"><tr><td colspan="6" class="empty-row">Carregando...</td></tr></tbody></table></div></section>
+            </section>
+
+            <section id="section-people" class="page-section">
+                <div class="section-title-row"><div><span class="eyebrow">FIRESTORE / EQUIPE</span><h2>Profissionais</h2></div><button class="secondary-button" id="refresh-people">Atualizar</button></div>
+                <div class="section-grid">
+                    <section class="panel"><div class="panel-head"><h2>Assistência</h2></div><div class="table-wrap"><table><thead><tr><th>Nome</th><th>E-mail</th></tr></thead><tbody id="assistencia-table"><tr><td colspan="2" class="empty-row">Carregando...</td></tr></tbody></table></div></section>
+                    <section class="panel"><div class="panel-head"><h2>Promotores</h2></div><div class="table-wrap"><table><thead><tr><th>Nome</th><th>E-mail</th></tr></thead><tbody id="promotores-table"><tr><td colspan="2" class="empty-row">Carregando...</td></tbody></table></div></section>
+                </div>
+            </section>
+
+            <section id="section-reports" class="page-section">
+                <div class="section-title-row"><div><span class="eyebrow">FIRESTORE / RELATÓRIOS</span><h2>Relatórios</h2></div><button class="secondary-button" id="refresh-reports">Atualizar</button></div>
+                <section class="panel"><div class="table-wrap"><table><thead><tr><th>Código</th><th>Cliente</th><th>Visita</th><th>Atualizado em</th></tr></thead><tbody id="reports-table"><tr><td colspan="4" class="empty-row">Carregando...</td></tr></tbody></table></div></section>
+            </section>
+
+            <footer class="app-footer">Advance Admin • painel administrativo do Advance Check</footer>
+        </main>
+    </div>
+    <script type="module" src="app.js"></script>
+</body>
+</html>
