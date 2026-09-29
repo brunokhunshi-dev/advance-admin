@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "1.0",
+  "schemaVersion": "1.1",
   "database": "Cloud Firestore",
   "project": "Advance Check",
   "collections": {
@@ -13,13 +13,35 @@
     "assistencia": {
       "fields": {
         "email": "string",
-        "nome": "string"
+        "nome": "string",
+        "telefone": "string (opcional)",
+        "cargo": "string (opcional)",
+        "ativo": "boolean (opcional, padrão true)",
+        "permissoes": {
+          "acessoApp": "boolean",
+          "agendarVisitas": "boolean",
+          "cadastrarClientes": "boolean",
+          "finalizarVisitas": "boolean",
+          "verHistorico": "boolean"
+        },
+        "atualizadoEm": "timestamp (opcional)"
       }
     },
     "promotores": {
       "fields": {
         "email": "string",
-        "nome": "string"
+        "nome": "string",
+        "telefone": "string (opcional)",
+        "cargo": "string (opcional)",
+        "ativo": "boolean (opcional, padrão true)",
+        "permissoes": {
+          "acessoApp": "boolean",
+          "agendarVisitas": "boolean",
+          "cadastrarClientes": "boolean",
+          "finalizarVisitas": "boolean",
+          "verHistorico": "boolean"
+        },
+        "atualizadoEm": "timestamp (opcional)"
       }
     },
     "clientes": {
@@ -104,6 +126,29 @@
         "excluidoEm": "timestamp",
         "excluidoPor": "string",
         "demaisCampos": "cópia de atividades"
+      }
+    },
+    "usuarios_excluidos": {
+      "fields": {
+        "colecaoOrigem": "string",
+        "memberId": "string",
+        "perfil": "object",
+        "excluidoEm": "timestamp",
+        "excluidoPor": "string"
+      }
+    },
+    "exclusoes_usuario": {
+      "access": "somente Firebase Admin SDK",
+      "fields": {
+        "collection": "string",
+        "memberId": "string",
+        "email": "string",
+        "codeHash": "string",
+        "salt": "string",
+        "expiresAt": "timestamp",
+        "requestedBy": "string",
+        "status": "string",
+        "attempts": "number"
       }
     }
   }
