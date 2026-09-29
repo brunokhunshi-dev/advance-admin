@@ -25,6 +25,19 @@
                 <button id="login-button" class="primary-button" type="submit">Entrar</button>
                 <p id="login-message" class="form-message" role="alert"></p>
             </form>
+            <div class="debug-box">
+                <button id="debug-toggle" class="debug-toggle" type="button" aria-expanded="false">
+                    Diagnóstico técnico
+                </button>
+                <div id="debug-panel" class="debug-panel" hidden>
+                    <div class="debug-actions">
+                        <button id="debug-run" class="secondary-button" type="button">Executar diagnóstico</button>
+                        <button id="debug-copy" class="text-button" type="button" disabled>Copiar resultado</button>
+                    </div>
+                    <p id="debug-summary" class="debug-summary">O diagnóstico verifica domínio, configuração, SDK, chave do Firebase e erros do navegador.</p>
+                    <div id="debug-results" class="debug-results" aria-live="polite"></div>
+                </div>
+            </div>
         </div>
     </div>
 
