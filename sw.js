@@ -1,4 +1,4 @@
-const CACHE_NAME = "advance-admin-v5";
+const CACHE_NAME = "advance-admin-v6";
 const APP_SHELL = [
     "./",
     "./index.html",
@@ -46,7 +46,9 @@ self.addEventListener("fetch", event => {
     if (url.origin !== self.location.origin) return;
 
     event.respondWith(
-        fetch(request).then(response => {
+        fetch(request, {
+            cache: request.destination === "style" || request.destination === "script" ? "no-store" : "default"
+        }).then(response => {
             if (!response.ok) return response;
             const cacheResponse = response.clone();
 
