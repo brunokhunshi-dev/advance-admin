@@ -3,12 +3,23 @@ import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from
 import { getFirestore, collection, doc, getDoc, getDocs, getCountFromServer, query, where, orderBy, limit } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
 import { firebaseConfig } from "./firebase-config.js";
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const $ = (selector) => document.querySelector(selector);
+let app = null;
+let auth = null;
+let db = null;
+let firebaseInitError = null;
 
+try {
+    app = initializeApp(firebaseConfig);
+    auth = getAuth(app);
+    db = getFirestore(app);
+} catch (error) {
+    firebaseInitError = error;
+    console.error("[Advance Admin] Falha ao inicializar Firebase:", error);
+}
+
+const $ = (selector) => document.querySelector(selector);
 const state = { clients: new Map(), admin: null };
+const debugState = { rows: [], running: false };
 
 function escapeHtml(value) {
     return String(value ?? "").replace(/[&<>"']/g, (char) => ({
@@ -34,6 +45,150 @@ function message(text = "") {
 }
 
 function loginMessage(text = "") { $("#login-message").textContent = text; }
+
+function formatDebugError(error) {
+    if (!error) return "";
+    return [
+        error.code ? "code=" + error.code : "",
+        error.name ? "name=" + error.name : "",
+        error.message ? error.message : ""
+    ].filter(Boolean).join(" • ");
+}
+
+function maskApiKey(key) {
+    if (!key) return "ausente";
+    if (key.length <= 10) return "********";
+    return key.slice(0, 6) + "…" + key.slice(-4);
+}
+
+function addDebugRow(status, title, detail = "") {
+    const icons = { ok: "✓", fail: "×", warn: "!", running: "…" };
+    debugState.rows.push({ status, title, detail });
+    $("#debug-results").insertAdjacentHTML("beforeend",
+        '<div class="debug-row"><div class="debug-' + status + '">' + icons[status] + '</div>' +
+        '<div><strong>' + escapeHtml(title) + '</strong>' +
+        (detail ? '<small>' + escapeHtml(detail) + '</small>' : '') +
+        '</div></div>'
+    );
+}
+
+async function testFirebaseApiKey() {
+    const key = firebaseConfig?.apiKey;
+    if (!key) throw new Error("apiKey não existe na configuração.");
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8000);
+
+    try {
+        const url = "https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=" + encodeURIComponent(key);
+        const response = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: "{}",
+            signal: controller.signal
+        });
+        const raw = await response.text();
+        let payload = null;
+        try { payload = JSON.parse(raw); } catch (_) {}
+
+        const apiMessage = String(payload?.error?.message || raw || "sem corpo de resposta");
+        if (response.ok || apiMessage === "MISSING_EMAIL" || apiMessage === "MISSING_PASSWORD") {
+            return { detail: "HTTP " + response.status + " • a chave foi aceita pelo Firebase Auth." };
+        }
+
+        if (/INVALID_API_KEY|API_KEY_INVALID|API key not valid/i.test(apiMessage)) {
+            throw new Error("HTTP " + response.status + " • " + apiMessage);
+        }
+
+        return { detail: "HTTP " + response.status + " • Firebase Auth respondeu " + apiMessage + " (isso indica que a chave chegou ao serviço)." };
+    } finally {
+        clearTimeout(timer);
+    }
+}
+
+async function runDiagnostics() {
+    if (debugState.running) return;
+
+    debugState.running = true;
+    $("#debug-run").disabled = true;
+    $("#debug-copy").disabled = true;
+    $("#debug-results").innerHTML = "";
+    debugState.rows = [];
+    $("#debug-summary").textContent = "Executando testes…";
+
+    addDebugRow("ok", "Página carregada", "URL: " + location.href);
+
+    const origin = location.origin;
+    addDebugRow(
+        origin === "null" ? "warn" : "ok",
+        "Origem do navegador",
+        "origin=" + origin + " • hostname=" + location.hostname + " • protocolo=" + location.protocol
+    );
+
+    const configOk = Boolean(
+        firebaseConfig?.apiKey &&
+        firebaseConfig?.authDomain &&
+        firebaseConfig?.projectId &&
+        firebaseConfig?.messagingSenderId &&
+        firebaseConfig?.appId
+    );
+    addDebugRow(
+        configOk ? "ok" : "fail",
+        "Configuração do Firebase",
+        configOk
+            ? "projectId=" + firebaseConfig.projectId + " • authDomain=" + firebaseConfig.authDomain + " • apiKey=" + maskApiKey(firebaseConfig.apiKey)
+            : "Campo obrigatório ausente na configuração."
+    );
+
+    addDebugRow(
+        firebaseInitError ? "fail" : "ok",
+        "Inicialização do SDK",
+        firebaseInitError ? formatDebugError(firebaseInitError) : "Firebase App, Auth e Firestore foram inicializados."
+    );
+
+    try {
+        const apiResult = await testFirebaseApiKey();
+        addDebugRow("ok", "Validação da API key no Firebase Auth", apiResult.detail);
+    } catch (error) {
+        const detail = formatDebugError(error);
+        let hint = detail;
+        if (/INVALID_API_KEY|API_KEY_INVALID|API key not valid/i.test(detail)) {
+            hint = detail + " • A chave foi rejeitada; verifique restrições da API key no Google Cloud e o domínio autorizado no Firebase Authentication.";
+        } else if (/403/.test(detail)) {
+            hint = detail + " • Verifique as restrições HTTP referrer da API key.";
+        } else if (/Failed to fetch|AbortError/i.test(detail)) {
+            hint = detail + " • O navegador não conseguiu completar a requisição; verifique conexão, extensões, CSP ou bloqueadores.";
+        }
+        addDebugRow("fail", "Validação da API key no Firebase Auth", hint);
+    }
+
+    if (firebaseInitError) {
+        addDebugRow("fail", "Firebase não está pronto para login", "Corrija a falha de inicialização acima.");
+    } else {
+        addDebugRow("ok", "Objeto Auth disponível", "getAuth(app) retornou uma instância válida.");
+        addDebugRow("ok", "Objeto Firestore disponível", "getFirestore(app) retornou uma instância válida.");
+    }
+
+    if (location.hostname.endsWith(".github.io")) {
+        addDebugRow("warn", "Domínio do GitHub Pages detectado", "No Firebase Authentication, " + location.hostname + " precisa estar em Authorized domains. A API key também pode estar limitada por HTTP referrer.");
+    } else if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {
+        addDebugRow("ok", "Ambiente local detectado", "Para produção, execute o diagnóstico novamente no domínio publicado.");
+    } else {
+        addDebugRow("warn", "Domínio atual", "Confirme este hostname em Firebase Authentication > Authorized domains e nas restrições HTTP referrer da API key.");
+    }
+
+    const failures = debugState.rows.filter((row) => row.status === "fail").length;
+    const warnings = debugState.rows.filter((row) => row.status === "warn").length;
+    $("#debug-summary").textContent = failures
+        ? failures + " teste(s) falharam e " + warnings + " aviso(s) foram encontrados."
+        : warnings
+            ? "Nenhuma falha direta na API key. Há " + warnings + " ponto(s) que merecem conferência."
+            : "Diagnóstico concluído sem falhas detectadas.";
+
+    $("#debug-copy").disabled = false;
+    $("#debug-run").disabled = false;
+    debugState.running = false;
+}
 
 async function requireAdmin(user) {
     const snap = await getDoc(doc(db, "administradores", user.uid));
@@ -171,13 +326,48 @@ $("#refresh-visits").addEventListener("click", loadVisits);
 $("#refresh-clients").addEventListener("click", loadClients);
 $("#refresh-people").addEventListener("click", loadPeople);
 $("#refresh-reports").addEventListener("click", loadReports);
-$("#logout-button").addEventListener("click", () => signOut(auth));
+if (auth) {
+    $("#logout-button").addEventListener("click", () => signOut(auth));
+}
+
+$("#debug-toggle").addEventListener("click", () => {
+    const panel = $("#debug-panel");
+    const open = panel.hidden;
+    panel.hidden = !open;
+    $("#debug-toggle").setAttribute("aria-expanded", String(open));
+});
+
+$("#debug-run").addEventListener("click", runDiagnostics);
+
+$("#debug-copy").addEventListener("click", async () => {
+    const result = debugState.rows
+        .map((row) => "[" + row.status.toUpperCase() + "] " + row.title + (row.detail ? " — " + row.detail : ""))
+        .join("\n");
+
+    try {
+        await navigator.clipboard.writeText(result);
+        $("#debug-summary").textContent = "Resultado copiado para a área de transferência.";
+    } catch (_) {
+        $("#debug-summary").textContent = result;
+    }
+});
+
+window.addEventListener("error", (event) => {
+    if (event.message) {
+        console.error("[Advance Admin] Erro global:", event.error || event.message);
+    }
+});
+
+window.addEventListener("unhandledrejection", (event) => {
+    console.error("[Advance Admin] Promise rejeitada:", event.reason);
+});
 
 $("#login-form").addEventListener("submit", async (event) => {
     event.preventDefault();
     const button = $("#login-button");
     button.disabled = true; button.textContent = "Entrando..."; loginMessage("");
     try {
+        if (!auth) throw new Error("Firebase Auth não foi inicializado. Abra o Diagnóstico técnico.");
         const credential = await signInWithEmailAndPassword(auth, $("#login-email").value.trim(), $("#login-password").value);
         const admin = await requireAdmin(credential.user);
         $("#login-password").value = "";
@@ -185,14 +375,24 @@ $("#login-form").addEventListener("submit", async (event) => {
     } catch (error) {
         await signOut(auth).catch(() => {});
         loginMessage(error.message || "Não foi possível entrar.");
+        addDebugRow("fail", "Tentativa de login", formatDebugError(error));
     } finally { button.disabled = false; button.textContent = "Entrar"; }
 });
 
-onAuthStateChanged(auth, async (user) => {
-    if (!user) { showLogin(); return; }
-    try { showAdmin(user, await requireAdmin(user)); }
-    catch (error) { loginMessage(error.message || "Esta conta não possui acesso administrativo."); await signOut(auth).catch(() => {}); }
-});
+if (auth) {
+    onAuthStateChanged(auth, async (user) => {
+        if (!user) { showLogin(); return; }
+        try {
+            showAdmin(user, await requireAdmin(user));
+        } catch (error) {
+            loginMessage(error.message || "Esta conta não possui acesso administrativo.");
+            await signOut(auth).catch(() => {});
+        }
+    });
+} else {
+    showLogin();
+    loginMessage("O Firebase não foi inicializado. Abra o Diagnóstico técnico.");
+}
 
 if ("serviceWorker" in navigator && (window.isSecureContext || location.hostname === "localhost")) {
     window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(console.error));
