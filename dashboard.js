@@ -239,48 +239,108 @@ function clearMap() {
 
 function ensureMap() {
     if(map || !window.L) return;
-    map=L.map("visit-map",{zoomControl:true}).setView([-23.1,-47.2],10);
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:"&copy; OpenStreetMap contributors"}).addTo(map);
+    map=L.map("visit-map",{zoomControl:true,preferCanvas:true}).setView([-23.1,-47.2],10);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{
+        attribution:"&copy; OpenStreetMap contributors",
+        maxZoom:19
+    }).addTo(map);
+}
+
+function activityMapPoint(activity){
+    const gps=parseGps(activity.checkinGps)||parseGps(activity.checkoutGps);
+    if(gps) return {...gps,activity,source:"GPS da visita"};
+
+    const client=allClients.find(item=>item.id===activity.clienteId);
+    const lat=Number(client?.lat),lng=Number(client?.lng);
+    if(Number.isFinite(lat)&&Number.isFinite(lng)&&Math.abs(lat)<=90&&Math.abs(lng)<=180){
+        return {lat,lng,activity,source:"Localização do cliente"};
+    }
+    return null;
+}
+
+function makeAdvanceMarker(point){
+    const icon=L.divIcon({
+        className:"advance-map-marker",
+        html:'<span class="advance-map-marker-ring"><i></i></span>',
+        iconSize:[28,28],
+        iconAnchor:[14,14],
+        popupAnchor:[0,-13]
+    });
+    return L.marker([point.lat,point.lng],{icon});
 }
 
 function renderMap(mode="points") {
     ensureMap();
     if(!map) return;
     clearMap();
-    mapPoints=filteredActivities.map(a=>{
-        const gps=parseGps(a.checkinGps)||parseGps(a.checkoutGps);
-        return gps ? {...gps,activity:a} : null;
-    }).filter(Boolean);
+
+    const heatLegend=$("#heat-legend");
+    if(heatLegend) heatLegend.hidden=mode!=="heat";
+
+    mapPoints=filteredActivities.map(activityMapPoint).filter(Boolean);
     $("#map-count").textContent=mapPoints.length + (mapPoints.length===1 ? " atividade localizada." : " atividades localizadas.");
 
-    if(!mapPoints.length){map.setView([-23.1,-47.2],10);return;}
-
-    if(mode==="routes"){
-        const grouped=new Map();
-        mapPoints.forEach(point=>{
-            const key=point.activity.ptvId||"sem-profissional";
-            if(!grouped.has(key)) grouped.set(key,[]);
-            grouped.get(key).push(point);
-        });
-        grouped.forEach(points=>{
-            points.sort((a,b)=>(asDate(a.activity.data)?.getTime()||0)-(asDate(b.activity.data)?.getTime()||0));
-            const line=L.polyline(points.map(p=>[p.lat,p.lng]),{color:"#040438",weight:3,opacity:.85}).addTo(map);
-            mapLayers.push(line);
-        });
-        mode="points";
+    if(!mapPoints.length){
+        map.setView([-23.1,-47.2],10);
+        return;
     }
 
-    mapPoints.forEach(point=>{
-        const marker=mode==="heat"
-            ? L.circleMarker([point.lat,point.lng],{radius:18,fillColor:"#F51E30",fillOpacity:.16,color:"#F51E30",weight:1})
-            : L.circleMarker([point.lat,point.lng],{radius:7,fillColor:"#F51E30",fillOpacity:1,color:"#fff",weight:2});
-        marker.bindPopup("<strong>"+escapeHtml(getClientName(point.activity.clienteId))+"</strong><br>"+escapeHtml(activityPersonName(point.activity))+"<br>"+formatDateTime(point.activity.data));
-        marker.addTo(map);
-        mapLayers.push(marker);
-    });
+    if(mode==="heat"){
+        if(typeof L.heatLayer==="function"){
+            const heat=L.heatLayer(
+                mapPoints.map(point=>[point.lat,point.lng,0.8]),
+                {
+                    radius:42,
+                    blur:30,
+                    maxZoom:14,
+                    minOpacity:.28,
+                    gradient:{
+                        .12:"#18378A",
+                        .32:"#00A9E8",
+                        .52:"#F4E94E",
+                        .72:"#FF8A00",
+                        1:"#F51E30"
+                    }
+                }
+            ).addTo(map);
+            mapLayers.push(heat);
+        }
+    } else {
+        if(mode==="routes"){
+            const grouped=new Map();
+            mapPoints.forEach(point=>{
+                const key=point.activity.ptvId||"sem-profissional";
+                if(!grouped.has(key)) grouped.set(key,[]);
+                grouped.get(key).push(point);
+            });
+            grouped.forEach(points=>{
+                points.sort((a,b)=>(asDate(a.activity.data)?.getTime()||0)-(asDate(b.activity.data)?.getTime()||0));
+                if(points.length<2) return;
+                const latlngs=points.map(point=>[point.lat,point.lng]);
+                const halo=L.polyline(latlngs,{color:"#F51E30",weight:7,opacity:.18,lineCap:"round",lineJoin:"round"}).addTo(map);
+                const line=L.polyline(latlngs,{color:"#040438",weight:3,opacity:.88,lineCap:"round",lineJoin:"round"}).addTo(map);
+                mapLayers.push(halo,line);
+            });
+        }
 
-    const bounds=L.latLngBounds(mapPoints.map(p=>[p.lat,p.lng]));
-    map.fitBounds(bounds,{padding:[30,30],maxZoom:13});
+        mapPoints.forEach(point=>{
+            const marker=makeAdvanceMarker(point);
+            marker.bindPopup(
+                '<div class="advance-map-popup">'+
+                '<span class="eyebrow">VISITA</span>'+
+                '<strong>'+escapeHtml(getClientName(point.activity.clienteId))+'</strong>'+
+                '<small>'+escapeHtml(activityPersonName(point.activity))+'</small>'+
+                '<small>'+formatDateTime(point.activity.data)+'</small>'+
+                '<em>'+escapeHtml(point.source)+'</em>'+
+                '</div>'
+            );
+            marker.addTo(map);
+            mapLayers.push(marker);
+        });
+    }
+
+    const bounds=L.latLngBounds(mapPoints.map(point=>[point.lat,point.lng]));
+    map.fitBounds(bounds,{padding:[34,34],maxZoom:13});
 }
 
 function renderRanking() {
