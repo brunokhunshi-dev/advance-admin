@@ -89,7 +89,7 @@ function renderMetrics(){
 }
 
 function actionButtons(activity){
-    const hasReport=reportsByActivity.has(activity.id)||activity.relatorioId;
+    const hasReport=reportsByActivity.has(activity.id)||reportsByActivity.has(activity.relatorioId);
     return '<div class="row-actions visit-row-actions">'+
         '<button class="row-link" type="button" data-visit-action="detail" data-id="'+escapeHtml(activity.id)+'">Ver visita</button>'+
         '<button class="visit-report-button'+(hasReport?"":" is-muted")+'" type="button" data-visit-action="report" data-id="'+escapeHtml(activity.id)+'">'+(hasReport?"Relatório":"Sem relatório")+'</button>'+
@@ -198,7 +198,7 @@ function historyText(entry,index){
 }
 function openReport(activity){
     selectedActivity=activity;
-    const report=reportsByActivity.get(activity.id)||null;
+    const report=reportsByActivity.get(activity.id)||reportsByActivity.get(activity.relatorioId)||null;
     $("#report-type-label").textContent=isTraining(activity)?"RELATÓRIO • TREINAMENTO":"RELATÓRIO • VISITA TÉCNICA";
     $("#report-title").textContent=clientName(activity.clienteId);
     $("#report-summary-grid").innerHTML=[
@@ -265,7 +265,7 @@ async function loadData(){
     reportsByActivity=new Map();
     reportSnap.docs.forEach(d=>{
         const report={id:d.id,...d.data()};
-        if(report.atividadeId)reportsByActivity.set(report.atividadeId,report);
+        if(report.atividadeId)reportsByActivity.set(report.atividadeId,report);reportsByActivity.set(report.id,report);
     });
     renderAll();
 
