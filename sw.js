@@ -1,4 +1,4 @@
-const CACHE_NAME = "advance-admin-v6";
+const CACHE_NAME = "advance-admin-v7";
 const APP_SHELL = [
     "./",
     "./index.html",
@@ -14,6 +14,7 @@ const APP_SHELL = [
     "./visits.js",
     "./clients.js",
     "./team.js",
+    "./team-active-filter.js",
     "./reports.js",
     "./firebase-config.js",
     "./manifest.json",
@@ -21,19 +22,13 @@ const APP_SHELL = [
 ];
 
 self.addEventListener("install", event => {
-    event.waitUntil(
-        caches.open(CACHE_NAME).then(cache => cache.addAll(APP_SHELL))
-    );
+    event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(APP_SHELL)));
     self.skipWaiting();
 });
 
 self.addEventListener("activate", event => {
     event.waitUntil(
-        caches.keys().then(keys =>
-            Promise.all(
-                keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
-            )
-        )
+        caches.keys().then(keys => Promise.all(keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))))
     );
     self.clients.claim();
 });
@@ -41,26 +36,33 @@ self.addEventListener("activate", event => {
 self.addEventListener("fetch", event => {
     const request = event.request;
     if (request.method !== "GET") return;
-
     const url = new URL(request.url);
     if (url.origin !== self.location.origin) return;
 
     event.respondWith(
         fetch(request, {
             cache: request.destination === "style" || request.destination === "script" ? "no-store" : "default"
-        }).then(response => {
+        }).then(async response => {
             if (!response.ok) return response;
+
+            if (url.pathname.endsWith("/team.js")) {
+                const source = await response.text();
+                const patched = source.includes('import "./team-active-filter.js";')
+                    ? source
+                    : source + '\nimport "./team-active-filter.js";\n';
+                const transformed = new Response(patched, {
+                    status: response.status,
+                    statusText: response.statusText,
+                    headers: {"Content-Type": "text/javascript; charset=utf-8"}
+                });
+                const cacheResponse = transformed.clone();
+                event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.put(request, cacheResponse)).catch(error => console.warn("[Advance Admin SW] cache:", error)));
+                return transformed;
+            }
+
             const cacheResponse = response.clone();
-
-            event.waitUntil(
-                caches.open(CACHE_NAME)
-                    .then(cache => cache.put(request, cacheResponse))
-                    .catch(error => console.warn("[Advance Admin SW] cache:", error))
-            );
-
+            event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.put(request, cacheResponse)).catch(error => console.warn("[Advance Admin SW] cache:", error)));
             return response;
-        }).catch(() =>
-            caches.match(request).then(cached => cached || caches.match("./index.html"))
-        )
+        }).catch(() => caches.match(request).then(cached => cached || caches.match("./index.html")))
     );
 });
