@@ -101,6 +101,14 @@ export function setupLayout(activePage, admin, user) {
     });
 }
 
+if ("serviceWorker" in navigator && (window.isSecureContext || location.hostname === "localhost")) {
+    window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./sw.js", { scope: "./" })
+            .then(registration => registration.update())
+            .catch(error => console.error("[Advance Admin] Service Worker:", error));
+    });
+}
+
 export async function loadCollection(name) {
     const snap = await getDocs(collection(db, name));
     return snap.docs.map(item => ({ id:item.id, ...item.data() }));
