@@ -1,6 +1,6 @@
 import {
     $, db, collection, getDocs, requireAdmin, setupLayout, escapeHtml, asDate,
-    formatDuration, formatDateTime, parseGps
+    formatDuration, formatDateTime, parseGps, normalizeVisitType
 } from "./core.js";
 
 let allActivities = [];
@@ -14,13 +14,8 @@ let mapPoints = [];
 
 const statusOptions = ["Pendente", "Em andamento", "Concluída", "Cancelada"];
 
-function isCommercial(activity) {
-    const value = String(activity.tipoVisita || activity.tipo || "").toLowerCase();
-    return value !== "treinamento";
-}
-
 function activityTypeLabel(activity) {
-    return isCommercial(activity) ? "Visita comercial" : "Treinamento";
+    return normalizeVisitType(activity);
 }
 
 function activityPersonName(activity) {
@@ -79,8 +74,10 @@ function activityPasses(activity) {
     if (person && activity.ptvId !== person) return false;
     if (status && activity.status !== status) return false;
     if (client && activity.clienteId !== client) return false;
-    if (type === "commercial" && !isCommercial(activity)) return false;
-    if (type === "training" && isCommercial(activity)) return false;
+    const activityType = activityTypeLabel(activity);
+    if (type === "commercial" && activityType !== "Visita comercial") return false;
+    if (type === "training" && activityType !== "Treinamento") return false;
+    if (type === "assistance" && activityType !== "Assistência técnica") return false;
     return true;
 }
 
@@ -111,7 +108,8 @@ function renderMetrics() {
     const completed = filteredActivities.filter(a => a.status === "Concluída").length;
     const progress = filteredActivities.filter(a => a.status === "Em andamento").length;
     const pending = filteredActivities.filter(a => a.status === "Pendente").length;
-    const trainings = filteredActivities.filter(a => !isCommercial(a)).length;
+    const trainings = filteredActivities.filter(a => activityTypeLabel(a) === "Treinamento").length;
+    const assistances = filteredActivities.filter(a => activityTypeLabel(a) === "Assistência técnica").length;
     const clients = new Set(filteredActivities.map(a => a.clienteId).filter(Boolean)).size;
     const durations = getCompletedDurations(filteredActivities);
     const avg = durations.length ? durations.reduce((sum,v) => sum+v,0) / durations.length : null;
@@ -124,8 +122,8 @@ function renderMetrics() {
     $("#metric-progress-sub").textContent = progress ? "Visitas abertas" : "Nenhuma visita aberta";
     $("#metric-pending").textContent = pending;
     $("#metric-pending-sub").textContent = pending ? "Visitas agendadas" : "Nenhuma visita pendente";
-    $("#metric-training").textContent = trainings;
-    $("#metric-training-sub").textContent = total ? Math.round(trainings / total * 100) + "% das atividades" : "Sem atividades";
+    $("#metric-training").textContent = trainings + " / " + assistances;
+    $("#metric-training-sub").textContent = "treinamentos / assistências";
     $("#metric-duration").textContent = avg == null ? "—" : formatDuration(avg);
     $("#metric-duration-sub").textContent = durations.length + (durations.length === 1 ? " visita concluída" : " visitas concluídas");
 }
