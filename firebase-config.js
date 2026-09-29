@@ -1,5 +1,5 @@
 export const firebaseConfig = {
-    apiKey: "AIzaSyAMDeRB1ZOOP919gcbcOoFGAsy6dNy7zS8",
+    apiKey: "AIzaSyAMDeRB1ZOOP919gcbcOoFgAsy6dNy7zS8",
     authDomain: "banco-de-dados-monitor.firebaseapp.com",
     projectId: "banco-de-dados-monitor",
     storageBucket: "banco-de-dados-monitor.firebasestorage.app",
