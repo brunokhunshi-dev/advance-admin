@@ -1,10 +1,28 @@
-const CACHE_NAME = "advance-admin-v2";
-const APP_SHELL = ["./","./index.html","./styles.css","./app.js","./firebase-config.js","./manifest.json","./midia/logo-advancecheck.svg"];
+const CACHE_NAME = "advance-admin-v3";
+const APP_SHELL = [
+    "./",
+    "./index.html",
+    "./dashboard.html",
+    "./visits.html",
+    "./clients.html",
+    "./people.html",
+    "./reports.html",
+    "./styles.css",
+    "./core.js",
+    "./login.js",
+    "./dashboard.js",
+    "./visits.js",
+    "./clients.js",
+    "./people.js",
+    "./reports.js",
+    "./firebase-config.js",
+    "./manifest.json",
+    "./midia/logo-advancecheck.svg"
+];
 
 self.addEventListener("install", event => {
     event.waitUntil(
-        caches.open(CACHE_NAME)
-            .then(cache => cache.addAll(APP_SHELL))
+        caches.open(CACHE_NAME).then(cache => cache.addAll(APP_SHELL))
     );
     self.skipWaiting();
 });
@@ -13,9 +31,7 @@ self.addEventListener("activate", event => {
     event.waitUntil(
         caches.keys().then(keys =>
             Promise.all(
-                keys
-                    .filter(key => key !== CACHE_NAME)
-                    .map(key => caches.delete(key))
+                keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
             )
         )
     );
@@ -30,27 +46,19 @@ self.addEventListener("fetch", event => {
     if (url.origin !== self.location.origin) return;
 
     event.respondWith(
-        fetch(request)
-            .then(response => {
-                if (!response.ok) return response;
+        fetch(request).then(response => {
+            if (!response.ok) return response;
+            const cacheResponse = response.clone();
 
-                // Clone immediately, before anything else can consume the body.
-                const cacheResponse = response.clone();
+            event.waitUntil(
+                caches.open(CACHE_NAME)
+                    .then(cache => cache.put(request, cacheResponse))
+                    .catch(error => console.warn("[Advance Admin SW] cache:", error))
+            );
 
-                event.waitUntil(
-                    caches.open(CACHE_NAME)
-                        .then(cache => cache.put(request, cacheResponse))
-                        .catch(error => {
-                            console.warn("[Advance Admin SW] Cache update failed:", error);
-                        })
-                );
-
-                return response;
-            })
-            .catch(() =>
-                caches.match(request).then(cached =>
-                    cached || caches.match("./index.html")
-                )
-            )
+            return response;
+        }).catch(() =>
+            caches.match(request).then(cached => cached || caches.match("./index.html"))
+        )
     );
 });
