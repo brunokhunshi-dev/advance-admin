@@ -4,7 +4,7 @@
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="theme-color" content="#FFFFFF">
 <title>Advance Admin — Visitas</title>
 <link rel="manifest" href="manifest.json"><link rel="icon" type="image/svg+xml" href="midia/logo-advancecheck.svg">
-<link rel="stylesheet" href="styles.css?v=20260929-9">
+<link rel="stylesheet" href="styles.css?v=20260929-10">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
@@ -28,7 +28,7 @@
 </header>
 
 <section class="visits-summary metrics-grid">
-<article class="metric-card"><span id="visit-metric-total-label">Visitas técnicas</span><strong id="visit-metric-total">—</strong><small id="visit-metric-total-sub">—</small></article>
+<article class="metric-card"><span id="visit-metric-total-label">Visitas comerciais</span><strong id="visit-metric-total">—</strong><small id="visit-metric-total-sub">—</small></article>
 <article class="metric-card"><span>Concluídas</span><strong id="visit-metric-completed">—</strong><small id="visit-metric-completed-sub">—</small></article>
 <article class="metric-card"><span id="visit-metric-special-label">Oportunidades</span><strong id="visit-metric-special">—</strong><small id="visit-metric-special-sub">—</small></article>
 <article class="metric-card"><span id="visit-metric-duration-label">Tempo médio em campo</span><strong id="visit-metric-duration">—</strong><small id="visit-metric-duration-sub">—</small></article>
@@ -45,14 +45,15 @@
 </div>
 
 <div class="team-tabs visits-tabs" role="tablist">
-<button class="team-tab active" type="button" data-visit-tab="technical" role="tab" aria-selected="true">Visitas técnicas <span id="technical-count">0</span></button>
+<button class="team-tab active" type="button" data-visit-tab="commercial" role="tab" aria-selected="true">Visitas comerciais <span id="commercial-count">0</span></button>
 <button class="team-tab" type="button" data-visit-tab="training" role="tab" aria-selected="false">Treinamentos <span id="training-count">0</span></button>
+<button class="team-tab" type="button" data-visit-tab="assistance" role="tab" aria-selected="false">Assistência técnica <span id="assistance-count">0</span></button>
 </div>
 
-<div id="technical-table-wrap" class="table-wrap">
+<div id="commercial-table-wrap" class="table-wrap">
 <table class="visits-table">
 <thead><tr><th>Cliente</th><th>Profissional</th><th>Data</th><th>Status</th><th>Objetivo</th><th>Oportunidade</th><th>Tempo em campo</th><th></th></tr></thead>
-<tbody id="technical-visits-table"><tr><td colspan="8" class="empty-row loading-row">Carregando visitas...</td></tr></tbody>
+<tbody id="commercial-visits-table"><tr><td colspan="8" class="empty-row loading-row">Carregando visitas...</td></tr></tbody>
 </table>
 </div>
 
@@ -62,9 +63,16 @@
 <tbody id="training-visits-table"><tr><td colspan="9" class="empty-row loading-row">Carregando treinamentos...</td></tr></tbody>
 </table>
 </div>
+
+<div id="assistance-table-wrap" class="table-wrap" hidden>
+<table class="visits-table">
+<thead><tr><th>Cliente</th><th>Profissional</th><th>Data</th><th>Status</th><th>Produto</th><th>Cliente final</th><th>Resultado</th><th>Tempo em campo</th><th></th></tr></thead>
+<tbody id="assistance-visits-table"><tr><td colspan="9" class="empty-row loading-row">Carregando assistências...</td></tr></tbody>
+</table>
+</div>
 </section>
 
-<footer class="app-footer">Advance Admin • acompanhamento de visitas e treinamentos</footer>
+<footer class="app-footer">Advance Admin • acompanhamento de visitas, treinamentos e assistências técnicas</footer>
 </main>
 </div>
 
@@ -99,6 +107,7 @@
 <button class="modal-close" type="button" data-close-visit-modal="visit-report">×</button>
 <header class="manage-header"><div><span id="report-type-label" class="eyebrow">RELATÓRIO</span><h2 id="report-title">Relatório da visita</h2></div></header>
 <section id="report-summary-grid" class="report-summary-grid"></section>
+<div id="report-standard-content">
 <section class="report-text-section">
 <span class="eyebrow">RELATÓRIO FINAL</span>
 <div id="report-current-text" class="report-current-text">Nenhum relatório salvo.</div>
@@ -111,10 +120,12 @@
 <div class="profile-section-head"><div><span class="eyebrow">VERSÕES</span><h3>Histórico do relatório</h3></div></div>
 <div id="report-history" class="report-history"></div>
 </section>
+</div>
+<div id="report-assistance-content" class="admin-assistance-report" hidden></div>
 <footer class="profile-actions"><button class="primary-button compact" type="button" data-close-visit-modal="visit-report">Fechar relatório</button></footer>
 </section>
 </div>
 
-<script type="module" src="visits.js?v=20260929-8"></script>
+<script type="module" src="visits.js?v=20260929-10"></script>
 </body>
 </html>
