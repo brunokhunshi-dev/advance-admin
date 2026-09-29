@@ -12,6 +12,7 @@ import {
 const functions = getFunctions(app);
 const requestDeletion = httpsCallable(functions, "requestTeamMemberDeletion");
 const confirmDeletion = httpsCallable(functions, "confirmTeamMemberDeletion");
+const updateMemberEmail = httpsCallable(functions, "updateTeamMemberEmail");
 
 let members = { promotores: [], assistencia: [] };
 let activities = [];
@@ -265,10 +266,6 @@ async function saveMember(event) {
     const emailChanged = newEmail !== String(selectedMember.email || "");
 
     try {
-        if (emailChanged) {
-            $("#manage-message").textContent = "O e-mail de login só pode ser alterado pela função segura do backend. Os demais dados serão salvos.";
-        }
-
         const payload = {
             nome: $("#manage-name").value.trim(),
             telefone: $("#manage-phone").value.trim(),
@@ -291,11 +288,22 @@ async function saveMember(event) {
             permissoes: payload.permissoes
         });
 
-        if (!emailChanged) selectedMember.email = newEmail;
-
-        $("#manage-message").textContent = emailChanged
-            ? "Alterações salvas. O e-mail permaneceu inalterado para não dessincronizar o Firebase Authentication."
-            : "Alterações salvas com sucesso.";
+        if (emailChanged) {
+            try {
+                await updateMemberEmail({
+                    collection: selectedMember.collection,
+                    memberId: selectedMember.id,
+                    newEmail
+                });
+                selectedMember.email = newEmail;
+                $("#manage-message").textContent = "Alterações e e-mail de acesso atualizados com sucesso.";
+            } catch (emailError) {
+                console.error(emailError);
+                $("#manage-message").textContent = "Dados salvos, mas o e-mail de login não foi alterado. Publique a função updateTeamMemberEmail para sincronizar com o Firebase Authentication.";
+            }
+        } else {
+            $("#manage-message").textContent = "Alterações salvas com sucesso.";
+        }
 
         renderAll();
     } catch(error) {
