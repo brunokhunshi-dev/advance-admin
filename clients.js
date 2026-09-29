@@ -16,6 +16,36 @@ function haversineKm(lat1,lng1,lat2,lng2){const R=6371,rad=Math.PI/180,dLat=(lat
 function distanceLabel(client){if(!advanceCoords||!validCoords(client.lat,client.lng))return"—";const km=haversineKm(advanceCoords.lat,advanceCoords.lng,Number(client.lat),Number(client.lng));return km<1?Math.round(km*1000)+" m":km.toFixed(1).replace(".",",")+" km"}
 async function fetchJson(url){const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),12000);try{const r=await fetch(url,{signal:controller.signal});if(!r.ok)throw new Error("Consulta indisponível (HTTP "+r.status+").");return await r.json()}finally{clearTimeout(timer)}}
 async function geocode(address){const data=await fetchJson("https://nominatim.openstreetmap.org/search?format=json&countrycodes=br&q="+encodeURIComponent(address)+"&limit=1");if(!Array.isArray(data)||!data.length)return null;const coords={lat:Number(data[0].lat),lng:Number(data[0].lon)};return validCoords(coords.lat,coords.lng)?coords:null}
+async function geocodeClientAddress(parts){
+    const candidates=[
+        parts.address,
+        [parts.street,parts.number,parts.neighborhood,parts.city,parts.uf,"Brasil"].filter(Boolean).join(", "),
+        [parts.street,parts.number,parts.city,parts.uf,"Brasil"].filter(Boolean).join(", "),
+        [parts.street,parts.city,parts.uf,"Brasil"].filter(Boolean).join(", ")
+    ].filter((value,index,array)=>value&&array.indexOf(value)===index);
+
+    for(const candidate of candidates){
+        try{
+            const coords=await geocode(candidate);
+            if(coords)return{...coords,source:"endereco"};
+        }catch(error){
+            console.warn("[Clientes] Geocode falhou:",candidate,error);
+        }
+    }
+
+    const rawCep=String(parts.cep||"").replace(/\D/g,"");
+    if(/^\d{8}$/.test(rawCep)){
+        try{
+            const cepData=await fetchJson("https://brasilapi.com.br/api/cep/v2/"+rawCep);
+            const lat=Number(cepData?.location?.coordinates?.latitude);
+            const lng=Number(cepData?.location?.coordinates?.longitude);
+            if(validCoords(lat,lng))return{lat,lng,source:"cep"};
+        }catch(error){
+            console.warn("[Clientes] CEP V2 sem coordenadas:",error);
+        }
+    }
+    return null;
+}
 async function loadAdvanceCoords(){try{const cached=JSON.parse(localStorage.getItem("advanceAdminBaseCoords")||"null");if(cached&&validCoords(cached.lat,cached.lng)){advanceCoords=cached;return}advanceCoords=await geocode(ADVANCE_ADDRESS);if(advanceCoords)localStorage.setItem("advanceAdminBaseCoords",JSON.stringify(advanceCoords))}catch(e){console.warn("Não foi possível localizar a sede da Advance",e)}}
 function cnpjValid(value){if(!/^\d{14}$/.test(value)||/^(\d)\1{13}$/.test(value))return false;const digit=base=>{let weight=base.length-7,sum=0;for(const n of base){sum+=Number(n)*weight--;if(weight<2)weight=9}const rest=sum%11;return rest<2?"0":String(11-rest)};return digit(value.slice(0,12))===value[12]&&digit(value.slice(0,13))===value[13]}
 function obscureCnpj(raw){return"C-"+(BigInt(raw)*999999937n).toString(16).toUpperCase()}
