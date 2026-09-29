@@ -616,13 +616,14 @@ tbody tr:hover{background:#fafafd}
 }
 .advance-map-marker-ring{
   width:28px;height:28px;display:grid;place-items:center;
-  border-radius:50%;
-  background:rgba(4,4,56,.18);
+  border-radius:50%;background:var(--navy);
+}
+.advance-map-marker-ring::before{
+  content:"";grid-area:1/1;width:20px;height:20px;border-radius:50%;background:#fff;
 }
 .advance-map-marker-ring i{
-  width:14px;height:14px;display:block;border-radius:50%;
-  background:var(--red);
-  box-shadow:0 0 0 4px #fff,0 0 0 6px var(--navy);
+  grid-area:1/1;position:relative;z-index:1;
+  width:12px;height:12px;display:block;border-radius:50%;background:var(--red);
 }
 .advance-map-popup{display:grid;gap:2px;min-width:150px}
 .advance-map-popup strong{margin-top:2px;color:var(--navy);font-size:12px}
@@ -641,9 +642,9 @@ tbody tr:hover{background:#fafafd}
   background:linear-gradient(90deg,#18378a 0%,#00a9e8 28%,#f4e94e 52%,#ff8a00 74%,#f51e30 100%);
 }
 .route-map-div-icon span{
-  background:var(--red)!important;
-  color:#fff!important;
-  box-shadow:0 0 0 4px #fff,0 0 0 6px var(--navy);
+  width:28px!important;height:28px!important;
+  background:var(--navy)!important;color:#fff!important;
+  outline:4px solid #fff;
 }
 @media(max-width:620px){
   .heat-legend{left:10px;right:10px;bottom:10px;justify-content:center}
