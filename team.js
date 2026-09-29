@@ -9,12 +9,27 @@ const functions=getFunctions(app);
 const requestDeletion=httpsCallable(functions,"requestTeamMemberDeletion");
 const confirmDeletion=httpsCallable(functions,"confirmTeamMemberDeletion");
 const updateMemberEmail=httpsCallable(functions,"updateTeamMemberEmail");
-let members={promotores:[],assistencia:[]},activities=[],clients=new Map(),activeTab="promotores",selectedMember=null,deleteRequestId=null;
+let members={promotores:[],assistencia:[]},activities=[],clients=new Map(),activeTab="promotores",selectedMember=null,deleteRequestId=null,profileRouteMap=null,profileRouteLayers=[];
 const defaultPermissions={acessoApp:true,agendarVisitas:true,cadastrarClientes:true,finalizarVisitas:true,verHistorico:true};
 const initials=n=>{const p=String(n||"").trim().split(/\s+/).filter(Boolean);return p.length?(p[0][0]+(p.length>1?p[p.length-1][0]:"")).toUpperCase():"—"};
 const memberRole=m=>m.cargo||m.funcao||(m.collection==="promotores"?"Promotor Técnico":"Assistente Técnico");
 const memberActive=m=>m.ativo!==false&&m.permissoes?.acessoApp!==false;
 function activityDurationMinutes(a){const s=asDate(a.checkinDataHora),e=asDate(a.checkoutDataHora);return !s||!e||e<s?null:(e-s)/60000}
+function parseGps(value){
+    if(typeof value!=="string")return null;
+    const parts=value.split(",").map(Number);
+    if(parts.length<2||!Number.isFinite(parts[0])||!Number.isFinite(parts[1]))return null;
+    if(Math.abs(parts[0])>90||Math.abs(parts[1])>180)return null;
+    return{lat:parts[0],lng:parts[1]};
+}
+function routePointForActivity(activity){
+    const checkin=parseGps(activity.checkinGps),checkout=parseGps(activity.checkoutGps);
+    const client=clients.get(activity.clienteId);
+    if(checkin)return{...checkin,source:"check-in",activity,client};
+    if(checkout)return{...checkout,source:"checkout",activity,client};
+    if(client&&Number.isFinite(Number(client.lat))&&Number.isFinite(Number(client.lng)))return{lat:Number(client.lat),lng:Number(client.lng),source:"cliente",activity,client};
+    return null;
+}
 function memberStats(m){const list=activities.filter(a=>a.ptvId===m.id).sort((a,b)=>(asDate(b.data)?.getTime()||0)-(asDate(a.data)?.getTime()||0));const completed=list.filter(a=>a.status==="Concluída"),durations=completed.map(activityDurationMinutes).filter(Number.isFinite),totalMinutes=durations.reduce((s,v)=>s+v,0);return{list,total:list.length,completed:completed.length,completion:list.length?completed.length/list.length*100:0,totalMinutes,averageMinutes:durations.length?totalMinutes/durations.length:null,uniqueClients:new Set(list.map(a=>a.clienteId).filter(Boolean)).size,lastActivity:list[0]?.data||null}}
 function currentMembers(){const term=$("#team-search").value.trim().toLowerCase();return members[activeTab].filter(m=>!term||[m.nome,m.email,m.telefone,memberRole(m)].some(v=>String(v||"").toLowerCase().includes(term)))}
 function renderOverview(){const all=[...members.promotores,...members.assistencia],stats=all.map(memberStats);$("#team-total").textContent=all.length;$("#team-active").textContent=all.filter(memberActive).length;$("#team-visits").textContent=stats.reduce((s,i)=>s+i.total,0);$("#team-field-time").textContent=formatDuration(stats.reduce((s,i)=>s+i.totalMinutes,0));$("#promotores-count").textContent=members.promotores.length;$("#assistencia-count").textContent=members.assistencia.length}
@@ -41,8 +56,81 @@ async function loadData(){const [p,a,v,c]=await Promise.all([getDocs(collection(
 const findMember=id=>[...members.promotores,...members.assistencia].find(m=>m.id===id)||null;
 function openModal(name){const m=$("#"+name+"-modal");if(m){m.hidden=false;document.body.classList.add("modal-open")}}
 function closeModal(name){const m=$("#"+name+"-modal");if(m)m.hidden=true;if(![...document.querySelectorAll(".team-modal")].some(x=>!x.hidden))document.body.classList.remove("modal-open")}
+function clearProfileRouteMap(){
+    profileRouteLayers.forEach(layer=>{try{layer.remove()}catch(_){}});
+    profileRouteLayers=[];
+}
+function renderProfileRoute(member){
+    const target=$("#profile-route-timeline"),summary=$("#profile-route-summary");
+    const ordered=memberStats(member).list.slice().sort((a,b)=>(asDate(a.data)?.getTime()||0)-(asDate(b.data)?.getTime()||0));
+    const points=ordered.map(routePointForActivity).filter(Boolean);
+
+    target.innerHTML=points.length?points.map((point,index)=>{
+        const clientName=point.client?.nome||"Cliente não encontrado";
+        const date=asDate(point.activity.data);
+        return '<article class="route-timeline-item" data-route-index="'+index+'">'+
+            '<div class="route-timeline-marker"><span>'+(index+1)+'</span></div>'+
+            '<div class="route-timeline-copy"><strong>'+escapeHtml(clientName)+'</strong><small>'+escapeHtml(point.activity.tipoVisita||point.activity.tipo||"Visita")+' • '+formatDateTime(point.activity.data)+'</small><span>'+escapeHtml(point.activity.status||"—")+' • localização: '+escapeHtml(point.source)+'</span></div>'+
+        '</article>';
+    }).join(""):'<div class="profile-empty">Nenhuma visita com localização disponível.</div>';
+
+    summary.textContent=points.length?points.length+(points.length===1?" ponto localizado":" pontos localizados"):"Sem pontos";
+
+    if(!window.L)return;
+    if(!profileRouteMap){
+        profileRouteMap=L.map("profile-route-map",{zoomControl:true,attributionControl:true}).setView([-23.1,-47.2],10);
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:"&copy; OpenStreetMap contributors"}).addTo(profileRouteMap);
+    }
+    clearProfileRouteMap();
+
+    if(!points.length){
+        profileRouteMap.setView([-23.1,-47.2],10);
+        setTimeout(()=>profileRouteMap.invalidateSize(),0);
+        return;
+    }
+
+    const latlngs=points.map(point=>[point.lat,point.lng]);
+    if(latlngs.length>1){
+        const line=L.polyline(latlngs,{color:"#040438",weight:4,opacity:.82}).addTo(profileRouteMap);
+        profileRouteLayers.push(line);
+    }
+
+    points.forEach((point,index)=>{
+        const icon=L.divIcon({
+            className:"route-map-div-icon",
+            html:'<span>'+(index+1)+'</span>',
+            iconSize:[28,28],
+            iconAnchor:[14,14]
+        });
+        const marker=L.marker([point.lat,point.lng],{icon}).addTo(profileRouteMap);
+        marker.bindPopup('<strong>'+escapeHtml(point.client?.nome||"Cliente não encontrado")+'</strong><br>'+escapeHtml(point.activity.tipoVisita||point.activity.tipo||"Visita")+'<br>'+formatDateTime(point.activity.data));
+        marker.on("click",()=>{
+            document.querySelectorAll(".route-timeline-item").forEach(item=>item.classList.remove("active"));
+            const item=document.querySelector('[data-route-index="'+index+'"]');
+            item?.classList.add("active");
+            item?.scrollIntoView({block:"nearest",behavior:"smooth"});
+        });
+        profileRouteLayers.push(marker);
+    });
+
+    profileRouteMap.fitBounds(L.latLngBounds(latlngs),{padding:[28,28],maxZoom:14});
+    setTimeout(()=>profileRouteMap.invalidateSize(),50);
+
+    target.querySelectorAll("[data-route-index]").forEach(item=>{
+        item.addEventListener("click",()=>{
+            const index=Number(item.dataset.routeIndex);
+            const point=points[index];
+            if(!point)return;
+            profileRouteMap.setView([point.lat,point.lng],14,{animate:true});
+            const marker=profileRouteLayers.find(layer=>layer instanceof L.Marker && layer.getLatLng && Math.abs(layer.getLatLng().lat-point.lat)<1e-7 && Math.abs(layer.getLatLng().lng-point.lng)<1e-7);
+            marker?.openPopup();
+            target.querySelectorAll(".route-timeline-item").forEach(row=>row.classList.remove("active"));
+            item.classList.add("active");
+        });
+    });
+}
 function renderActivityBars(m){const stats=memberStats(m),map=new Map(),today=new Date();for(let i=6;i>=0;i--){const d=new Date(today);d.setDate(today.getDate()-i);map.set(d.toISOString().slice(0,10),{date:d,count:0})}stats.list.forEach(a=>{const d=asDate(a.data),k=d?.toISOString().slice(0,10);if(k&&map.has(k))map.get(k).count++});const days=[...map.values()],max=Math.max(1,...days.map(d=>d.count));$("#profile-activity-bars").innerHTML=days.map(d=>'<div class="activity-bar-column"><div class="activity-bar-value">'+d.count+'</div><div class="activity-bar-track"><span style="height:'+Math.max(d.count?12:2,(d.count/max)*100)+'%"></span></div><small>'+d.date.toLocaleDateString("pt-BR",{weekday:"short"}).replace(".","")+'</small></div>').join('')}
-function openProfile(m){selectedMember=m;const s=memberStats(m);$("#profile-avatar").textContent=initials(m.nome);$("#profile-area").textContent=m.collection==="promotores"?"PROMOTORIA":"ASSISTÊNCIA";$("#profile-name").textContent=m.nome||"Sem nome";$("#profile-role").textContent=memberRole(m);$("#profile-email").textContent=m.email||"E-mail não cadastrado";$("#profile-email").href=m.email?"mailto:"+m.email:"#";$("#profile-phone").textContent=m.telefone||"Telefone não cadastrado";$("#profile-status").textContent=memberActive(m)?"Ativo":"Inativo";$("#profile-status").className="profile-status "+(memberActive(m)?"is-active":"is-inactive");$("#profile-visits").textContent=s.total;$("#profile-completed").textContent=s.completed;$("#profile-completion").textContent=Math.round(s.completion)+"%";$("#profile-field-time").textContent=formatDuration(s.totalMinutes);$("#profile-average").textContent=formatDuration(s.averageMinutes);$("#profile-clients").textContent=s.uniqueClients;renderActivityBars(m);$("#profile-recent-visits").innerHTML=s.list.length?s.list.slice(0,5).map(a=>{const c=clients.get(a.clienteId);return '<div class="recent-visit"><span class="recent-status-dot"></span><div><strong>'+escapeHtml(c?.nome||"Cliente não encontrado")+'</strong><small>'+escapeHtml(a.tipoVisita||a.tipo||"Visita")+' • '+formatDateTime(a.data)+'</small></div><span class="recent-visit-status">'+escapeHtml(a.status||"—")+'</span></div>'}).join(''):'<div class="profile-empty">Nenhuma atividade registrada para este profissional.</div>';openModal("profile")}
+function openProfile(m){selectedMember=m;const s=memberStats(m);$("#profile-avatar").textContent=initials(m.nome);$("#profile-area").textContent=m.collection==="promotores"?"PROMOTORIA":"ASSISTÊNCIA";$("#profile-name").textContent=m.nome||"Sem nome";$("#profile-role").textContent=memberRole(m);$("#profile-email").textContent=m.email||"E-mail não cadastrado";$("#profile-email").href=m.email?"mailto:"+m.email:"#";$("#profile-phone").textContent=m.telefone||"Telefone não cadastrado";$("#profile-status").textContent=memberActive(m)?"Ativo":"Inativo";$("#profile-status").className="profile-status "+(memberActive(m)?"is-active":"is-inactive");$("#profile-visits").textContent=s.total;$("#profile-completed").textContent=s.completed;$("#profile-completion").textContent=Math.round(s.completion)+"%";$("#profile-field-time").textContent=formatDuration(s.totalMinutes);$("#profile-average").textContent=formatDuration(s.averageMinutes);$("#profile-clients").textContent=s.uniqueClients;renderActivityBars(m);renderProfileRoute(m);$("#profile-recent-visits").innerHTML=s.list.length?s.list.slice(0,5).map(a=>{const c=clients.get(a.clienteId);return '<div class="recent-visit"><span class="recent-status-dot"></span><div><strong>'+escapeHtml(c?.nome||"Cliente não encontrado")+'</strong><small>'+escapeHtml(a.tipoVisita||a.tipo||"Visita")+' • '+formatDateTime(a.data)+'</small></div><span class="recent-visit-status">'+escapeHtml(a.status||"—")+'</span></div>'}).join(''):'<div class="profile-empty">Nenhuma atividade registrada para este profissional.</div>';openModal("profile")}
 const permissionsOf=m=>({...defaultPermissions,...(m.permissoes||{})});
 function openManage(m){selectedMember=m;const p=permissionsOf(m);$("#manage-title").textContent=m.nome||"Editar profissional";$("#manage-collection-badge").textContent=m.collection==="promotores"?"Promotoria":"Assistência";$("#manage-name").value=m.nome||"";$("#manage-email").value=m.email||"";$("#manage-phone").value=m.telefone||"";$("#manage-role").value=memberRole(m);$("#manage-active").checked=m.ativo!==false;$("#perm-access").checked=p.acessoApp!==false;$("#perm-schedule").checked=p.agendarVisitas!==false;$("#perm-clients").checked=p.cadastrarClientes!==false;$("#perm-close").checked=p.finalizarVisitas!==false;$("#perm-history").checked=p.verHistorico!==false;$("#manage-active-label").textContent=$("#manage-active").checked?"Ativo":"Inativo";$("#manage-message").textContent="";closeModal("profile");openModal("manage")}
 async function saveMember(e){e.preventDefault();if(!selectedMember)return;const b=$("#save-user"),newEmail=$("#manage-email").value.trim(),changed=newEmail!==String(selectedMember.email||"");b.disabled=true;b.textContent="Salvando...";$("#manage-message").textContent="";try{const payload={nome:$("#manage-name").value.trim(),telefone:$("#manage-phone").value.trim(),cargo:$("#manage-role").value.trim(),ativo:$("#manage-active").checked,permissoes:{acessoApp:$("#perm-access").checked,agendarVisitas:$("#perm-schedule").checked,cadastrarClientes:$("#perm-clients").checked,finalizarVisitas:$("#perm-close").checked,verHistorico:$("#perm-history").checked},atualizadoEm:serverTimestamp()};await updateDoc(doc(db,selectedMember.collection,selectedMember.id),payload);Object.assign(selectedMember,payload,{atualizadoEm:new Date()});if(changed){await updateMemberEmail({collection:selectedMember.collection,memberId:selectedMember.id,newEmail});selectedMember.email=newEmail}$("#manage-message").textContent="Alterações salvas com sucesso.";renderAll()}catch(err){console.error(err);$("#manage-message").textContent=err.message||"Não foi possível salvar as alterações."}finally{b.disabled=false;b.textContent="Salvar alterações"}}
