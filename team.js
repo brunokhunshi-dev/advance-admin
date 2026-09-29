@@ -1,12 +1,14 @@
 import { app, $, db, collection, getDocs, requireAdmin, setupLayout, escapeHtml, asDate, formatDateTime, formatDuration } from "./core.js";
-import { doc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
+import { doc, setDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
+import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, deleteUser, signOut as signOutSecondary, updateProfile } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js";
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-functions.js";
+import { firebaseConfig } from "./firebase-config.js";
 
 const functions=getFunctions(app);
 const requestDeletion=httpsCallable(functions,"requestTeamMemberDeletion");
 const confirmDeletion=httpsCallable(functions,"confirmTeamMemberDeletion");
 const updateMemberEmail=httpsCallable(functions,"updateTeamMemberEmail");
-const createTeamMember=httpsCallable(functions,"createTeamMember");
 let members={promotores:[],assistencia:[]},activities=[],clients=new Map(),activeTab="promotores",selectedMember=null,deleteRequestId=null;
 const defaultPermissions={acessoApp:true,agendarVisitas:true,cadastrarClientes:true,finalizarVisitas:true,verHistorico:true};
 const initials=n=>{const p=String(n||"").trim().split(/\s+/).filter(Boolean);return p.length?(p[0][0]+(p.length>1?p[p.length-1][0]:"")).toUpperCase():"—"};
@@ -45,7 +47,77 @@ const permissionsOf=m=>({...defaultPermissions,...(m.permissoes||{})});
 function openManage(m){selectedMember=m;const p=permissionsOf(m);$("#manage-title").textContent=m.nome||"Editar profissional";$("#manage-collection-badge").textContent=m.collection==="promotores"?"Promotoria":"Assistência";$("#manage-name").value=m.nome||"";$("#manage-email").value=m.email||"";$("#manage-phone").value=m.telefone||"";$("#manage-role").value=memberRole(m);$("#manage-active").checked=m.ativo!==false;$("#perm-access").checked=p.acessoApp!==false;$("#perm-schedule").checked=p.agendarVisitas!==false;$("#perm-clients").checked=p.cadastrarClientes!==false;$("#perm-close").checked=p.finalizarVisitas!==false;$("#perm-history").checked=p.verHistorico!==false;$("#manage-active-label").textContent=$("#manage-active").checked?"Ativo":"Inativo";$("#manage-message").textContent="";closeModal("profile");openModal("manage")}
 async function saveMember(e){e.preventDefault();if(!selectedMember)return;const b=$("#save-user"),newEmail=$("#manage-email").value.trim(),changed=newEmail!==String(selectedMember.email||"");b.disabled=true;b.textContent="Salvando...";$("#manage-message").textContent="";try{const payload={nome:$("#manage-name").value.trim(),telefone:$("#manage-phone").value.trim(),cargo:$("#manage-role").value.trim(),ativo:$("#manage-active").checked,permissoes:{acessoApp:$("#perm-access").checked,agendarVisitas:$("#perm-schedule").checked,cadastrarClientes:$("#perm-clients").checked,finalizarVisitas:$("#perm-close").checked,verHistorico:$("#perm-history").checked},atualizadoEm:serverTimestamp()};await updateDoc(doc(db,selectedMember.collection,selectedMember.id),payload);Object.assign(selectedMember,payload,{atualizadoEm:new Date()});if(changed){await updateMemberEmail({collection:selectedMember.collection,memberId:selectedMember.id,newEmail});selectedMember.email=newEmail}$("#manage-message").textContent="Alterações salvas com sucesso.";renderAll()}catch(err){console.error(err);$("#manage-message").textContent=err.message||"Não foi possível salvar as alterações."}finally{b.disabled=false;b.textContent="Salvar alterações"}}
 function openNewMember(){const f=$("#new-member-form");f.reset();$("#new-member-team").value=activeTab;["#new-perm-access","#new-perm-schedule","#new-perm-clients","#new-perm-close","#new-perm-history"].forEach(id=>$(id).checked=true);$("#new-member-role").value=activeTab==="promotores"?"Promotor Técnico":"Assistente Técnico";$("#new-member-message").textContent="";openModal("new-member")}
-async function createMember(e){e.preventDefault();const b=$("#create-member");b.disabled=true;b.textContent="Cadastrando...";$("#new-member-message").textContent="";try{const payload={collection:$("#new-member-team").value,nome:$("#new-member-name").value.trim(),email:$("#new-member-email").value.trim(),telefone:$("#new-member-phone").value.trim(),cargo:$("#new-member-role").value.trim(),password:$("#new-member-password").value,permissoes:{acessoApp:$("#new-perm-access").checked,agendarVisitas:$("#new-perm-schedule").checked,cadastrarClientes:$("#new-perm-clients").checked,finalizarVisitas:$("#new-perm-close").checked,verHistorico:$("#new-perm-history").checked}};await createTeamMember(payload);activeTab=payload.collection;document.querySelectorAll("[data-team-tab]").forEach(t=>{const on=t.dataset.teamTab===activeTab;t.classList.toggle("active",on);t.setAttribute("aria-selected",String(on))});await loadData();closeModal("new-member")}catch(err){console.error(err);$("#new-member-message").textContent=err.message||"Não foi possível cadastrar o membro."}finally{b.disabled=false;b.textContent="Cadastrar membro"}}
+async function createMember(e){
+    e.preventDefault();
+    const b=$("#create-member");
+    b.disabled=true;
+    b.textContent="Cadastrando...";
+    $("#new-member-message").textContent="";
+
+    const payload={
+        collection:$("#new-member-team").value,
+        nome:$("#new-member-name").value.trim(),
+        email:$("#new-member-email").value.trim().toLowerCase(),
+        telefone:$("#new-member-phone").value.trim(),
+        cargo:$("#new-member-role").value.trim(),
+        password:$("#new-member-password").value,
+        permissoes:{
+            acessoApp:$("#new-perm-access").checked,
+            agendarVisitas:$("#new-perm-schedule").checked,
+            cadastrarClientes:$("#new-perm-clients").checked,
+            finalizarVisitas:$("#new-perm-close").checked,
+            verHistorico:$("#new-perm-history").checked
+        }
+    };
+
+    const secondaryApp=initializeApp(firebaseConfig,"team-member-"+Date.now());
+    const secondaryAuth=getAuth(secondaryApp);
+    let credential=null;
+
+    try{
+        credential=await createUserWithEmailAndPassword(secondaryAuth,payload.email,payload.password);
+        await updateProfile(credential.user,{displayName:payload.nome});
+
+        const ref=doc(collection(db,payload.collection));
+        await setDoc(ref,{
+            nome:payload.nome,
+            email:payload.email,
+            telefone:payload.telefone,
+            cargo:payload.cargo||(payload.collection==="promotores"?"Promotor Técnico":"Assistente Técnico"),
+            ativo:true,
+            permissoes:payload.permissoes,
+            authUid:credential.user.uid,
+            criadoEm:serverTimestamp(),
+            atualizadoEm:serverTimestamp()
+        });
+
+        await signOutSecondary(secondaryAuth).catch(()=>{});
+        activeTab=payload.collection;
+        document.querySelectorAll("[data-team-tab]").forEach(t=>{
+            const on=t.dataset.teamTab===activeTab;
+            t.classList.toggle("active",on);
+            t.setAttribute("aria-selected",String(on));
+        });
+        await loadData();
+        closeModal("new-member");
+    }catch(err){
+        console.error("[Equipe] Cadastro:",err);
+        if(credential?.user)await deleteUser(credential.user).catch(()=>{});
+        const messages={
+            "auth/email-already-in-use":"Este e-mail já possui uma conta no Firebase Authentication.",
+            "auth/invalid-email":"Informe um e-mail válido.",
+            "auth/weak-password":"A senha inicial precisa ter pelo menos 6 caracteres.",
+            "auth/operation-not-allowed":"O cadastro por e-mail e senha está desativado no Firebase Authentication.",
+            "permission-denied":"A conta foi criada, mas as regras do Firestore bloquearam o perfil. A conta temporária foi removida."
+        };
+        $("#new-member-message").textContent=messages[err.code]||err.message||"Não foi possível cadastrar o membro.";
+    }finally{
+        await signOutSecondary(secondaryAuth).catch(()=>{});
+        await deleteApp(secondaryApp).catch(()=>{});
+        b.disabled=false;
+        b.textContent="Cadastrar membro";
+    }
+}
 function openDelete(){if(!selectedMember)return;deleteRequestId=null;$("#delete-email").textContent=selectedMember.email||"e-mail não cadastrado";$("#delete-code").value="";$("#delete-request-step").hidden=false;$("#delete-code-step").hidden=true;$("#delete-message").textContent="";closeModal("manage");openModal("delete")}
 async function sendDeleteCode(){if(!selectedMember)return;const b=$("#send-delete-code");b.disabled=true;b.textContent="Enviando...";try{const r=await requestDeletion({collection:selectedMember.collection,memberId:selectedMember.id});deleteRequestId=r.data.requestId;$("#delete-request-step").hidden=true;$("#delete-code-step").hidden=false;$("#delete-code-hint").textContent="Código enviado para "+(r.data.maskedEmail||selectedMember.email)+". Válido por 10 minutos."}catch(e){$("#delete-message").textContent=e.message||"Não foi possível enviar o código."}finally{b.disabled=false;b.textContent="Enviar código de confirmação"}}
 async function confirmDelete(){const code=$("#delete-code").value.replace(/\D/g,"").slice(0,6);if(!deleteRequestId||code.length!==6){$("#delete-message").textContent="Digite o código de 6 dígitos.";return}try{await confirmDeletion({requestId:deleteRequestId,code});await loadData();closeModal("delete");selectedMember=null}catch(e){$("#delete-message").textContent=e.message||"Não foi possível confirmar a exclusão."}}
