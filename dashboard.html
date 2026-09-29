@@ -4,7 +4,7 @@
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="theme-color" content="#FFFFFF">
 <title>Advance Admin — Dashboard</title>
 <link rel="manifest" href="manifest.json"><link rel="icon" type="image/svg+xml" href="midia/logo-advancecheck.svg">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><link rel="stylesheet" href="styles.css?v=20260929-9">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><link rel="stylesheet" href="styles.css?v=20260929-10">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
@@ -41,9 +41,9 @@
 <section class="panel chart-panel"><div class="panel-head"><div><span class="eyebrow">DISTRIBUIÇÃO</span><h2>Status</h2></div></div><div class="canvas-wrap donut-wrap"><canvas id="chart-status" class="dashboard-canvas"></canvas></div><div id="status-legend" class="chart-legend"></div></section>
 <section class="panel chart-panel wide"><div class="panel-head"><div><span class="eyebrow">EQUIPE</span><h2>Atividades por profissional</h2></div></div><div class="canvas-wrap"><canvas id="chart-professionals" class="dashboard-canvas"></canvas></div><p id="professional-caption" class="panel-caption"></p></section>
 </section>
-<section class="panel map-panel"><div class="panel-head map-head"><div><span class="eyebrow">GEOLOCALIZAÇÃO</span><h2>Mapa de visitas</h2><p id="map-count" class="panel-caption">Carregando localizações.</p></div><div class="map-toolbar"><div class="segmented"><button id="map-points" class="map-mode active" type="button">Pontos</button><button id="map-heat" class="map-mode" type="button">Mapa de calor</button><button id="map-routes" class="map-mode" type="button">Rotas da equipe</button></div><button id="maps-button" class="secondary-button compact" type="button">Abrir no Google Maps</button></div></div><div id="visit-map"></div></section>
+<section class="panel map-panel"><div class="panel-head map-head"><div><span class="eyebrow">GEOLOCALIZAÇÃO</span><h2>Mapa de visitas</h2><p id="map-count" class="panel-caption">Carregando localizações.</p></div><div class="map-toolbar"><div class="segmented"><button id="map-points" class="map-mode active" type="button">Pontos</button><button id="map-heat" class="map-mode" type="button">Mapa de calor</button><button id="map-routes" class="map-mode" type="button">Rotas da equipe</button></div><button id="maps-button" class="secondary-button compact" type="button">Abrir no Google Maps</button></div></div><div class="map-stage"><div id="visit-map" class="advance-map-theme"></div><div id="heat-legend" class="heat-legend" hidden><span>Menor</span><i></i><span>Maior concentração</span></div></div></section>
 <section class="panel ranking-panel"><div class="panel-head"><div><span class="eyebrow">DESEMPENHO</span><h2>Ranking da equipe</h2></div></div><div class="table-wrap"><table><thead><tr><th>Profissional</th><th>Total</th><th>Concluídas</th><th>Conclusão</th><th>Duração média</th></tr></thead><tbody id="ranking-table"><tr><td colspan="5" class="empty-row loading-row">Carregando...</td></tr></tbody></table></div></section>
 <footer class="app-footer">Advance Admin • painel administrativo do Advance Check</footer>
 </main></div>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script type="module" src="dashboard.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script><script type="module" src="dashboard.js?v=20260929-10"></script>
 </body></html>
