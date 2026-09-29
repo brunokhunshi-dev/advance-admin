@@ -1,7 +1,5 @@
 import { app, $, db, collection, getDocs, requireAdmin, setupLayout, escapeHtml, asDate, formatDateTime, formatDuration } from "./core.js";
 import { doc, setDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
-import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword, deleteUser, signOut as signOutSecondary, updateProfile } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js";
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-functions.js";
 import { firebaseConfig } from "./firebase-config.js";
 
@@ -158,50 +156,107 @@ async function createMember(e){
         }
     };
 
-    const secondaryApp=initializeApp(firebaseConfig,"team-member-"+Date.now());
-    const secondaryAuth=getAuth(secondaryApp);
-    let credential=null;
+    let authCreated=false;
+    let createdIdToken=null;
+    let authUid=null;
 
     try{
-        credential=await createUserWithEmailAndPassword(secondaryAuth,payload.email,payload.password);
-        await updateProfile(credential.user,{displayName:payload.nome});
+        const signupResponse=await fetch(
+            "https://identitytoolkit.googleapis.com/v1/accounts:signUp?key="+encodeURIComponent(firebaseConfig.apiKey),
+            {
+                method:"POST",
+                headers:{"Content-Type":"application/json"},
+                body:JSON.stringify({
+                    email:payload.email,
+                    password:payload.password,
+                    returnSecureToken:true
+                })
+            }
+        );
+
+        const signupData=await signupResponse.json().catch(()=>({}));
+        const authError=String(signupData?.error?.message||"");
+
+        if(signupResponse.ok){
+            authCreated=true;
+            createdIdToken=signupData.idToken||null;
+            authUid=signupData.localId||null;
+
+            if(createdIdToken){
+                await fetch(
+                    "https://identitytoolkit.googleapis.com/v1/accounts:update?key="+encodeURIComponent(firebaseConfig.apiKey),
+                    {
+                        method:"POST",
+                        headers:{"Content-Type":"application/json"},
+                        body:JSON.stringify({
+                            idToken:createdIdToken,
+                            displayName:payload.nome,
+                            returnSecureToken:false
+                        })
+                    }
+                ).catch(()=>{});
+            }
+        }else if(authError!=="EMAIL_EXISTS"){
+            const authMessages={
+                "INVALID_EMAIL":"Informe um e-mail válido.",
+                "WEAK_PASSWORD : Password should be at least 6 characters":"A senha inicial precisa ter pelo menos 6 caracteres.",
+                "OPERATION_NOT_ALLOWED":"O cadastro por e-mail e senha está desativado no Firebase Authentication.",
+                "TOO_MANY_ATTEMPTS_TRY_LATER":"Muitas tentativas de cadastro. Aguarde alguns minutos e tente novamente."
+            };
+            throw new Error(authMessages[authError]||("Firebase Auth: "+authError));
+        }
+
+        const duplicate=[...members.promotores,...members.assistencia].find(m=>String(m.email||"").toLowerCase()===payload.email);
+        if(duplicate){
+            throw new Error("Este e-mail já possui um perfil cadastrado em "+(duplicate.collection==="promotores"?"Promotoria":"Assistência")+".");
+        }
 
         const ref=doc(collection(db,payload.collection));
-        await setDoc(ref,{
+        const profileData={
             nome:payload.nome,
             email:payload.email,
             telefone:payload.telefone,
             cargo:payload.cargo||(payload.collection==="promotores"?"Promotor Técnico":"Assistente Técnico"),
             ativo:true,
             permissoes:payload.permissoes,
-            authUid:credential.user.uid,
             criadoEm:serverTimestamp(),
             atualizadoEm:serverTimestamp()
-        });
+        };
+        if(authUid)profileData.authUid=authUid;
 
-        await signOutSecondary(secondaryAuth).catch(()=>{});
+        await setDoc(ref,profileData);
+
         activeTab=payload.collection;
         document.querySelectorAll("[data-team-tab]").forEach(t=>{
             const on=t.dataset.teamTab===activeTab;
             t.classList.toggle("active",on);
             t.setAttribute("aria-selected",String(on));
         });
+
         await loadData();
         closeModal("new-member");
     }catch(err){
         console.error("[Equipe] Cadastro:",err);
-        if(credential?.user)await deleteUser(credential.user).catch(()=>{});
-        const messages={
-            "auth/email-already-in-use":"Este e-mail já possui uma conta no Firebase Authentication.",
-            "auth/invalid-email":"Informe um e-mail válido.",
-            "auth/weak-password":"A senha inicial precisa ter pelo menos 6 caracteres.",
-            "auth/operation-not-allowed":"O cadastro por e-mail e senha está desativado no Firebase Authentication.",
-            "permission-denied":"A conta foi criada, mas as regras do Firestore bloquearam o perfil. A conta temporária foi removida."
-        };
-        $("#new-member-message").textContent=messages[err.code]||err.message||"Não foi possível cadastrar o membro.";
+
+        if(authCreated&&createdIdToken){
+            await fetch(
+                "https://identitytoolkit.googleapis.com/v1/accounts:delete?key="+encodeURIComponent(firebaseConfig.apiKey),
+                {
+                    method:"POST",
+                    headers:{"Content-Type":"application/json"},
+                    body:JSON.stringify({idToken:createdIdToken})
+                }
+            ).catch(()=>{});
+        }
+
+        const code=String(err?.code||"");
+        const msg=String(err?.message||"");
+        if(code.includes("permission-denied")){
+            $("#new-member-message").textContent="O Firestore bloqueou a criação do perfil. Publique as regras administrativas de escrita para Promotores/Assistência.";
+        }else{
+            $("#new-member-message").textContent=msg||"Não foi possível cadastrar o membro.";
+        }
     }finally{
-        await signOutSecondary(secondaryAuth).catch(()=>{});
-        await deleteApp(secondaryApp).catch(()=>{});
         b.disabled=false;
         b.textContent="Cadastrar membro";
     }
