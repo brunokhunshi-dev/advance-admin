@@ -1,4 +1,4 @@
-const CACHE_NAME = "advance-admin-v8";
+const CACHE_NAME = "advance-admin-v9";
 const APP_SHELL = [
     "./",
     "./index.html",
@@ -6,7 +6,6 @@ const APP_SHELL = [
     "./visits.html",
     "./clients.html",
     "./team.html",
-    "./reports.html",
     "./styles.css",
     "./core.js",
     "./login.js",
@@ -15,7 +14,6 @@ const APP_SHELL = [
     "./clients.js",
     "./team.js",
     "./team-active-filter.js",
-    "./reports.js",
     "./firebase-config.js",
     "./manifest.json",
     "./midia/logo-advancecheck.svg"
