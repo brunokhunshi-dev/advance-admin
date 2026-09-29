@@ -56,7 +56,10 @@
         "status": "string",
         "criadoEm": "timestamp",
         "atualizadoEm": "timestamp",
-        "criadoPor": "string (condicional)"
+        "criadoPor": "string (condicional)",
+        "importancia": "string (opcional: Não definida | Baixa | Média | Alta | Estratégico)",
+        "excluidoEm": "timestamp (condicional)",
+        "excluidoPor": "string (condicional)"
       }
     },
     "atividades": {
