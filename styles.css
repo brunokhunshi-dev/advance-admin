@@ -287,3 +287,25 @@ input,select,.team-search,.secondary-button,.row-menu,.manage-grid input,.manage
 .active-filter{height:40px;display:flex;align-items:center;gap:8px;padding:0 11px;border-radius:10px;background:#F5F5F7;color:#55555F;font-size:.72rem;font-weight:600;white-space:nowrap;cursor:pointer}
 .active-filter input{width:16px;height:16px;accent-color:var(--red)}
 @media(max-width:760px){.active-filter{width:100%;justify-content:flex-start}}
+
+
+/* Rota no perfil da equipe */
+.profile-route-section{padding-bottom:24px}
+.profile-route-section .profile-section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px}
+.route-summary{color:#85858E;font-size:.68rem;font-weight:600}
+.profile-route-map{height:330px;margin-top:16px;border-radius:15px;overflow:hidden;background:#EFEFF3}
+.profile-route-map .leaflet-control-container{font-family:"Outfit",sans-serif}
+.route-map-div-icon{background:transparent!important}
+.route-map-div-icon span{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--red);color:#fff;font:700 11px "Outfit",sans-serif}
+.profile-route-timeline{display:grid;margin-top:15px;max-height:280px;overflow:auto;padding-right:4px}
+.route-timeline-item{position:relative;display:grid;grid-template-columns:34px minmax(0,1fr);gap:10px;padding:8px 10px 10px 0;border-radius:10px;cursor:pointer}
+.route-timeline-item:hover,.route-timeline-item.active{background:#F5F5F7}
+.route-timeline-marker{position:relative;display:flex;justify-content:center}
+.route-timeline-marker::after{content:"";position:absolute;top:26px;bottom:-16px;width:2px;background:#E6E6EA}
+.route-timeline-item:last-child .route-timeline-marker::after{display:none}
+.route-timeline-marker span{position:relative;z-index:1;display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:#040438;color:#fff;font-size:.65rem;font-weight:700}
+.route-timeline-copy strong,.route-timeline-copy small,.route-timeline-copy span{display:block}
+.route-timeline-copy strong{font-size:.76rem;color:var(--blue)}
+.route-timeline-copy small{margin-top:3px;color:#74747D;font-size:.67rem}
+.route-timeline-copy span{margin-top:3px;color:#97979F;font-size:.62rem}
+@media(max-width:620px){.profile-route-map{height:260px}.profile-route-section .profile-section-head{align-items:flex-start;flex-direction:column}.route-summary{margin-top:-6px}}
