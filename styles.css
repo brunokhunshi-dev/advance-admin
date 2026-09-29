@@ -283,3 +283,7 @@ input,select,.team-search,.secondary-button,.row-menu,.manage-grid input,.manage
 
 @media(max-width:1050px){.team-comparison-grid{grid-template-columns:1fr}.client-overview{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:760px){.comparison-kpis{grid-template-columns:1fr 1fr}.client-profile-hero{grid-template-columns:64px 1fr}.client-profile-avatar{width:64px;height:64px}.client-profile-side{grid-column:2;justify-items:start}.client-lookup-row{grid-template-columns:1fr}.client-lookup-row .secondary-button{width:100%}}
+
+.active-filter{height:40px;display:flex;align-items:center;gap:8px;padding:0 11px;border-radius:10px;background:#F5F5F7;color:#55555F;font-size:.72rem;font-weight:600;white-space:nowrap;cursor:pointer}
+.active-filter input{width:16px;height:16px;accent-color:var(--red)}
+@media(max-width:760px){.active-filter{width:100%;justify-content:flex-start}}
