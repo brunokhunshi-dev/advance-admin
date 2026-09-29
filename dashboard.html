@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="theme-color" content="#FFFFFF">
+<title>Advance Admin — Dashboard</title>
+<link rel="manifest" href="manifest.json"><link rel="icon" type="image/svg+xml" href="midia/logo-advancecheck.svg">
+<link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="admin-screen">
+<aside class="sidebar"><div class="sidebar-brand"><img src="midia/logo-advancecheck.svg" alt="Advance Check"><span>ADMIN</span></div>
+<nav class="sidebar-nav">
+<a class="nav-link" data-page="dashboard" href="./dashboard.html"><span class="nav-icon">⌂</span><span>Visão geral</span></a>
+<a class="nav-link" data-page="visits" href="./visits.html"><span class="nav-icon">◫</span><span>Visitas</span></a>
+<a class="nav-link" data-page="clients" href="./clients.html"><span class="nav-icon">□</span><span>Clientes</span></a>
+<a class="nav-link" data-page="people" href="./people.html"><span class="nav-icon">○</span><span>Profissionais</span></a>
+<a class="nav-link" data-page="reports" href="./reports.html"><span class="nav-icon">≡</span><span>Relatórios</span></a>
+</nav><button id="logout-button" class="nav-link nav-danger" type="button"><span class="nav-icon">↪</span><span>Sair</span></button></aside>
+<main class="content dashboard-content">
+<header class="topbar"><div><span class="eyebrow">ADVANCE CHECK</span><h1>Dashboard</h1></div><div class="user-chip"><strong id="user-name">Administrador</strong><span id="user-email"></span></div></header>
+<section class="dashboard-headline"><div><span class="eyebrow">PERÍODO E SEGMENTAÇÃO</span><h2>Indicadores de visitas</h2></div><button id="clear-filters" class="text-button" type="button">Limpar filtros</button></section>
+<section class="filters-panel panel"><form id="filters-form" class="dashboard-filters">
+<label>Data inicial<input id="filter-start" type="date"></label><label>Data final<input id="filter-end" type="date"></label>
+<label>Profissional<select id="filter-professional"><option value="">Todos os profissionais</option></select></label>
+<label>Status<select id="filter-status"><option value="">Todos os status</option><option value="Pendente">Pendente</option><option value="Em andamento">Em andamento</option><option value="Concluída">Concluída</option><option value="Cancelada">Cancelada</option></select></label>
+<label>Tipo<select id="filter-type"><option value="">Todos os tipos</option><option value="commercial">Visita comercial</option><option value="training">Treinamento</option></select></label>
+<label>Cliente<select id="filter-client"><option value="">Todos os clientes</option></select></label>
+<div class="filter-actions"><button class="primary-button compact" type="submit">Aplicar filtros</button><button id="export-csv" class="secondary-button compact" type="button">Exportar CSV</button></div>
+</form></section>
+<section class="metrics-grid dashboard-metrics">
+<article class="metric-card"><span>Total no período</span><strong id="metric-total">—</strong><small id="metric-total-sub">—</small></article>
+<article class="metric-card"><span>Concluídas</span><strong id="metric-completed">—</strong><small id="metric-completed-sub">—</small></article>
+<article class="metric-card"><span>Em andamento</span><strong id="metric-progress">—</strong><small id="metric-progress-sub">—</small></article>
+<article class="metric-card"><span>Pendentes</span><strong id="metric-pending">—</strong><small id="metric-pending-sub">—</small></article>
+<article class="metric-card"><span>Treinamentos</span><strong id="metric-training">—</strong><small id="metric-training-sub">—</small></article>
+<article class="metric-card"><span>Duração média</span><strong id="metric-duration">—</strong><small id="metric-duration-sub">—</small></article>
+</section>
+<section class="dashboard-grid">
+<section class="panel chart-panel wide"><div class="panel-head"><div><span class="eyebrow">EVOLUÇÃO</span><h2>Atividades por dia</h2></div></div><div class="canvas-wrap"><canvas id="chart-daily" class="dashboard-canvas"></canvas></div><p id="daily-caption" class="panel-caption"></p></section>
+<section class="panel chart-panel"><div class="panel-head"><div><span class="eyebrow">DISTRIBUIÇÃO</span><h2>Status</h2></div></div><div class="canvas-wrap donut-wrap"><canvas id="chart-status" class="dashboard-canvas"></canvas></div><div id="status-legend" class="chart-legend"></div></section>
+<section class="panel chart-panel wide"><div class="panel-head"><div><span class="eyebrow">EQUIPE</span><h2>Atividades por profissional</h2></div></div><div class="canvas-wrap"><canvas id="chart-professionals" class="dashboard-canvas"></canvas></div><p id="professional-caption" class="panel-caption"></p></section>
+</section>
+<section class="panel map-panel"><div class="panel-head map-head"><div><span class="eyebrow">GEOLOCALIZAÇÃO</span><h2>Mapa de visitas</h2><p id="map-count" class="panel-caption">Carregando localizações.</p></div><div class="map-toolbar"><div class="segmented"><button id="map-points" class="map-mode active" type="button">Pontos</button><button id="map-heat" class="map-mode" type="button">Mapa de calor</button><button id="map-routes" class="map-mode" type="button">Rotas da equipe</button></div><button id="maps-button" class="secondary-button compact" type="button">Abrir no Google Maps</button></div></div><div id="visit-map"></div></section>
+<section class="panel ranking-panel"><div class="panel-head"><div><span class="eyebrow">DESEMPENHO</span><h2>Ranking da equipe</h2></div></div><div class="table-wrap"><table><thead><tr><th>Profissional</th><th>Total</th><th>Concluídas</th><th>Conclusão</th><th>Duração média</th></tr></thead><tbody id="ranking-table"><tr><td colspan="5" class="empty-row">Carregando...</td></tr></tbody></table></div></section>
+<footer class="app-footer">Advance Admin • painel administrativo do Advance Check</footer>
+</main></div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script type="module" src="dashboard.js"></script>
+</body></html>
