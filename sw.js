@@ -1,13 +1,56 @@
-const CACHE_NAME = "advance-admin-v1";
+const CACHE_NAME = "advance-admin-v2";
 const APP_SHELL = ["./","./index.html","./styles.css","./app.js","./firebase-config.js","./manifest.json","./midia/logo-advancecheck.svg"];
-self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(APP_SHELL))); self.skipWaiting(); });
-self.addEventListener("activate", e => { e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))))); self.clients.claim(); });
-self.addEventListener("fetch", e => {
-    if (e.request.method !== "GET") return;
-    const url = new URL(e.request.url);
+
+self.addEventListener("install", event => {
+    event.waitUntil(
+        caches.open(CACHE_NAME)
+            .then(cache => cache.addAll(APP_SHELL))
+    );
+    self.skipWaiting();
+});
+
+self.addEventListener("activate", event => {
+    event.waitUntil(
+        caches.keys().then(keys =>
+            Promise.all(
+                keys
+                    .filter(key => key !== CACHE_NAME)
+                    .map(key => caches.delete(key))
+            )
+        )
+    );
+    self.clients.claim();
+});
+
+self.addEventListener("fetch", event => {
+    const request = event.request;
+    if (request.method !== "GET") return;
+
+    const url = new URL(request.url);
     if (url.origin !== self.location.origin) return;
-    e.respondWith(fetch(e.request).then(r => {
-        if (r.ok) caches.open(CACHE_NAME).then(c => c.put(e.request, r.clone()));
-        return r;
-    }).catch(() => caches.match(e.request).then(c => c || caches.match("./index.html"))));
+
+    event.respondWith(
+        fetch(request)
+            .then(response => {
+                if (!response.ok) return response;
+
+                // Clone immediately, before anything else can consume the body.
+                const cacheResponse = response.clone();
+
+                event.waitUntil(
+                    caches.open(CACHE_NAME)
+                        .then(cache => cache.put(request, cacheResponse))
+                        .catch(error => {
+                            console.warn("[Advance Admin SW] Cache update failed:", error);
+                        })
+                );
+
+                return response;
+            })
+            .catch(() =>
+                caches.match(request).then(cached =>
+                    cached || caches.match("./index.html")
+                )
+            )
+    );
 });
