@@ -16,7 +16,8 @@ service cloud.firestore {
 
     match /clientes/{document} {
       allow read: if isAdmin();
-      allow write: if false;
+      allow create, update: if isAdmin();
+      allow delete: if false;
     }
 
     match /atividades/{document} {
