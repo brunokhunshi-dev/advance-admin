@@ -13,6 +13,18 @@ button,input{font:inherit}button{cursor:pointer}[hidden]{display:none!important}
 .login-form input:focus{border-color:var(--blue)}
 .primary-button{min-height:48px;margin-top:4px;border:0;border-radius:12px;background:var(--red);color:#fff;font-weight:700}
 .form-message{min-height:20px;margin:0;color:#B01A29;font-size:.8rem}
+.debug-box{margin-top:22px;border-top:1px solid var(--line);padding-top:16px}
+.debug-toggle{padding:0;border:0;background:transparent;color:#777780;font-size:.76rem;font-weight:600}
+.debug-panel{margin-top:13px}
+.debug-actions{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.debug-actions .secondary-button{min-height:36px;font-size:.76rem}
+.debug-actions .text-button{font-size:.76rem}
+.debug-summary{margin:0 0 10px;color:#777780;font-size:.72rem;line-height:1.45}
+.debug-results{display:grid;gap:7px}
+.debug-row{display:grid;grid-template-columns:18px minmax(0,1fr);gap:8px;padding:9px 10px;border:1px solid var(--line);border-radius:9px;background:#FBFBFC;font-size:.71rem;line-height:1.4}
+.debug-row strong{display:block;font-size:.73rem}
+.debug-row small{display:block;color:#777780;overflow-wrap:anywhere}
+.debug-ok{color:#168222}.debug-fail{color:#B01A29}.debug-warn{color:#A16D00}
 .admin-screen{display:grid;grid-template-columns:248px minmax(0,1fr);min-height:100vh}
 .sidebar{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;padding:28px 18px;background:#fff;border-right:1px solid var(--line)}
 .sidebar-brand{display:grid;gap:7px;padding:8px 10px 34px}.sidebar-brand img{width:155px}.sidebar-brand span{color:var(--red);font-size:.62rem;font-weight:800;letter-spacing:.14em}
