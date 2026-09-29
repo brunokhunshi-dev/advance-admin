@@ -4,7 +4,7 @@
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="theme-color" content="#FFFFFF">
 <title>Advance Admin — Clientes</title>
 <link rel="manifest" href="manifest.json"><link rel="icon" type="image/svg+xml" href="midia/logo-advancecheck.svg">
-<link rel="stylesheet" href="styles.css?v=20260929-3">
+<link rel="stylesheet" href="styles.css?v=20260929-4">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
@@ -35,7 +35,7 @@
 <section class="panel clients-panel">
 <div class="team-panel-head">
 <div><span class="eyebrow">CARTEIRA</span><h2>Clientes cadastrados</h2></div>
-<div class="team-head-actions"><label class="team-search"><span>⌕</span><input id="client-search" type="search" placeholder="Buscar cliente, cidade ou endereço"></label><button id="refresh-clients" class="secondary-button" type="button">Atualizar</button><button id="new-client" class="primary-button compact" type="button">+ Novo cliente</button></div>
+<div class="team-head-actions"><label class="active-filter"><input id="only-active-clients" type="checkbox" checked><span>Somente ativos</span></label><label class="team-search"><span>⌕</span><input id="client-search" type="search" placeholder="Buscar cliente, cidade ou endereço"></label><button id="refresh-clients" class="secondary-button" type="button">Atualizar</button><button id="new-client" class="primary-button compact" type="button">+ Novo cliente</button></div>
 </div>
 <div class="table-wrap"><table class="clients-table"><thead><tr><th>Cliente</th><th>Importância</th><th>Status</th><th>Visitas</th><th>Última visita</th><th>Distância da Advance</th><th>Cidade</th><th></th></tr></thead><tbody id="clients-table"><tr><td colspan="8" class="empty-row">Carregando clientes...</td></tr></tbody></table></div>
 </section>
@@ -115,5 +115,5 @@
 
 <div id="delete-client-modal" class="team-modal" hidden><div class="team-modal-backdrop" data-close-client-modal="delete-client"></div><section class="team-modal-card delete-modal-card"><button class="modal-close" type="button" data-close-client-modal="delete-client">×</button><span class="delete-alert-icon">!</span><span class="eyebrow">EXCLUIR CLIENTE</span><h2>Remover da operação?</h2><p>O cliente será marcado como inativo para preservar o histórico das visitas e relatórios já vinculados.</p><div class="delete-actions"><button class="secondary-button" type="button" data-close-client-modal="delete-client">Cancelar</button><button id="confirm-delete-client" class="danger-button" type="button">Excluir cliente</button></div><p id="delete-client-message" class="manage-message"></p></section></div>
 
-<script type="module" src="clients.js?v=20260929-3"></script>
+<script type="module" src="clients.js?v=20260929-4"></script>
 </body></html>
