@@ -29,19 +29,32 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Gestores administram dados operacionais da equipe.
+    // Exclusão definitiva continua proibida no cliente e passa apenas pelo backend.
     match /assistencia/{document} {
       allow read: if isAdmin();
-      allow write: if false;
+      allow create, update: if isAdmin();
+      allow delete: if false;
     }
 
     match /promotores/{document} {
       allow read: if isAdmin();
-      allow write: if false;
+      allow create, update: if isAdmin();
+      allow delete: if false;
     }
 
     match /atividades_excluidas/{document} {
       allow read: if isAdmin();
       allow write: if false;
+    }
+
+    match /usuarios_excluidos/{document} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    match /exclusoes_usuario/{document} {
+      allow read, write: if false;
     }
   }
 }
