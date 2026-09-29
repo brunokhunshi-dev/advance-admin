@@ -49,6 +49,15 @@ export function parseGps(value) {
     return { lat, lng };
 }
 
+export function normalizeVisitType(activity) {
+    const raw = String(activity?.tipoVisita || activity?.tipo || activity?.objetivo || "").trim().toLowerCase();
+    if (raw.includes("trein")) return "Treinamento";
+    if (raw.includes("assist") && raw.includes("técn")) return "Assistência técnica";
+    if (raw.includes("assist") && raw.includes("tecn")) return "Assistência técnica";
+    if (raw === "visita técnica" || raw === "visita tecnica" || raw === "visita comercial" || raw === "comercial") return "Visita comercial";
+    return "Visita comercial";
+}
+
 export function statusClass(status) {
     return ({
         "Concluída":"status-completed",
