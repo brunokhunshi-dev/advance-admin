@@ -650,3 +650,45 @@ tbody tr:hover{background:#fafafd}
   .heat-legend{left:10px;right:10px;bottom:10px;justify-content:center}
   .heat-legend i{flex:1;max-width:150px}
 }
+
+
+/* Relatório preenchido — Assistência técnica */
+.admin-assistance-report{
+    padding:22px 24px 8px;
+}
+.admin-assistance-section{
+    margin-bottom:28px;
+}
+.admin-assistance-section:last-child{
+    margin-bottom:8px;
+}
+.admin-assistance-section h3{
+    margin:0 0 18px;
+    color:var(--navy);
+    font-size:15px;
+    font-weight:700;
+}
+.admin-assistance-field{
+    margin-bottom:17px;
+}
+.admin-assistance-field:last-child{
+    margin-bottom:0;
+}
+.admin-assistance-field span{
+    display:block;
+    margin-bottom:4px;
+    color:#96969f;
+    font-size:9px;
+    font-weight:800;
+    letter-spacing:.055em;
+    text-transform:uppercase;
+}
+.admin-assistance-field strong{
+    display:block;
+    color:var(--text);
+    font-size:12px;
+    font-weight:600;
+    line-height:1.5;
+    white-space:pre-wrap;
+    overflow-wrap:anywhere;
+}
