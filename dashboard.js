@@ -1,8 +1,7 @@
 import {
-    $, db, collection, getDocs, requireAdmin, setupLayout, escapeHtml, asDate, formatDate,
-    formatDuration, formatDateTime, parseGps, statusClass
+    $, db, collection, getDocs, requireAdmin, setupLayout, escapeHtml, asDate,
+    formatDuration, formatDateTime, parseGps
 } from "./core.js";
-import { query, orderBy, limit } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
 
 let allActivities = [];
 let allClients = [];
@@ -40,8 +39,13 @@ async function loadData() {
     allClients = clientsSnap.docs.map(d => ({ id:d.id, ...d.data() }));
 
     professionals = new Map();
-    [...assistSnap.docs, ...promotersSnap.docs].forEach(d => {
-        professionals.set(d.id, { id:d.id, ...d.data() });
+    assistSnap.docs.forEach(d => {
+        const data = d.data() || {};
+        professionals.set(d.id, { id:d.id, ...data, cargo:data.cargo || data.funcao || "Assistente Técnico" });
+    });
+    promotersSnap.docs.forEach(d => {
+        const data = d.data() || {};
+        professionals.set(d.id, { id:d.id, ...data, cargo:data.cargo || data.funcao || "Promotor Técnico" });
     });
 
     populateFilters();
