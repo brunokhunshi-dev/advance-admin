@@ -309,3 +309,53 @@ input,select,.team-search,.secondary-button,.row-menu,.manage-grid input,.manage
 .route-timeline-copy small{margin-top:3px;color:#74747D;font-size:.67rem}
 .route-timeline-copy span{margin-top:3px;color:#97979F;font-size:.62rem}
 @media(max-width:620px){.profile-route-map{height:260px}.profile-route-section .profile-section-head{align-items:flex-start;flex-direction:column}.route-summary{margin-top:-6px}}
+
+
+/* Visitas e treinamentos */
+.visits-content{max-width:1650px}
+.visits-summary{grid-template-columns:repeat(4,minmax(0,1fr));margin-bottom:16px}
+.visits-panel{overflow:visible}
+.visits-filter-select{height:40px;min-width:155px;padding:0 11px;border-radius:10px;background:#F5F5F7;color:var(--blue);outline:0}
+.visits-tabs{margin-top:0}
+.visits-table td{vertical-align:middle}
+.visit-client-cell{min-width:190px}
+.visit-client-cell strong,.visit-client-cell small{display:block}
+.visit-client-cell strong{font-size:.78rem;color:var(--blue)}
+.visit-client-cell small{margin-top:3px;color:#909099;font-size:.65rem}
+.visit-text-cell{max-width:240px;white-space:normal;line-height:1.35}
+.visit-row-actions{min-width:155px}
+.visit-report-button{min-height:34px;padding:0 10px;border-radius:9px;background:#FDEDEF;color:var(--red);font-size:.68rem;font-weight:700}
+.visit-report-button.is-muted{background:#F3F3F5;color:#8B8B94}
+.visit-detail-card{width:min(850px,100%)}
+.visit-detail-hero{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;padding:28px}
+.visit-detail-hero h2{margin:5px 0 5px;font-size:1.5rem}
+.visit-detail-hero p{margin:0;color:#72727C;font-size:.76rem}
+.visit-detail-grid,.report-summary-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:#F3F3F6}
+.visit-detail-item{padding:17px 19px;background:#fff}
+.visit-detail-item.is-wide{grid-column:span 2}
+.visit-detail-item span{display:block;color:#8A8A93;font-size:.65rem}
+.visit-detail-item strong{display:block;margin-top:5px;color:var(--blue);font-size:.78rem;line-height:1.45;white-space:normal}
+.visit-field-timeline{display:grid;gap:0;margin-top:12px}
+.field-timeline-item{position:relative;display:grid;grid-template-columns:20px 1fr;gap:9px;padding:8px 0 12px}
+.field-timeline-dot{width:10px;height:10px;margin-top:3px;border-radius:50%;background:var(--red)}
+.field-timeline-item::after{content:"";position:absolute;left:4px;top:22px;bottom:-3px;width:2px;background:#E7E7EB}
+.field-timeline-item:last-child::after{display:none}
+.field-timeline-item strong,.field-timeline-item small{display:block}
+.field-timeline-item strong{font-size:.76rem}
+.field-timeline-item small{margin-top:2px;color:#85858E;font-size:.66rem}
+.field-timeline-item p{margin:3px 0 0;color:#6F6F78;font-size:.7rem}
+.visit-note{margin:12px 0 0;color:#55555F;font-size:.78rem;line-height:1.6;white-space:pre-wrap}
+.report-viewer-card{width:min(900px,100%)}
+.report-text-section{padding:22px 26px;background:#F8F8FA}
+.report-current-text{margin-top:10px;white-space:pre-wrap;color:#33333D;font-size:.78rem;line-height:1.65}
+.report-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;margin-top:13px;background:#F4F4F6}
+.report-history{display:grid;gap:10px;margin-top:13px}
+.report-history-item{padding:14px;border-radius:12px;background:#F7F7F9}
+.report-history-item strong,.report-history-item small{display:block}
+.report-history-item small{margin-top:2px;color:#92929A;font-size:.65rem}
+.report-history-item p{margin:8px 0 0;white-space:pre-wrap;color:#5C5C65;font-size:.72rem;line-height:1.5}
+.recent-visit-button{width:100%;border:0;background:transparent;text-align:left;font-family:inherit}
+.recent-visit-button:hover{background:#F7F7F9}
+.visit-link-inline{display:inline-flex;margin-top:5px;color:var(--red);font-size:.63rem;font-weight:700}
+@media(max-width:1000px){.visits-summary{grid-template-columns:repeat(2,1fr)}.visit-detail-grid,.report-summary-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:760px){.visits-filter-select{width:100%}.visit-detail-hero{flex-direction:column}.visit-detail-grid,.report-summary-grid,.report-fields{grid-template-columns:1fr}.visit-detail-item.is-wide{grid-column:auto}}
