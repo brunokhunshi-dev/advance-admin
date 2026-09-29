@@ -1,7 +1,119 @@
 <!DOCTYPE html>
-<html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="theme-color" content="#FFFFFF"><title>Advance Admin — Clientes</title><link rel="manifest" href="manifest.json"><link rel="icon" type="image/svg+xml" href="midia/logo-advancecheck.svg"><link rel="stylesheet" href="styles.css"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet"></head>
-<body><div class="admin-screen"><aside class="sidebar"><div class="sidebar-brand"><img src="midia/logo-advancecheck.svg" alt="Advance Check"><span>ADMIN</span></div><nav class="sidebar-nav"><a class="nav-link" data-page="dashboard" href="./dashboard.html"><span class="nav-icon">⌂</span><span>Visão geral</span></a>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="theme-color" content="#FFFFFF">
+<title>Advance Admin — Clientes</title>
+<link rel="manifest" href="manifest.json"><link rel="icon" type="image/svg+xml" href="midia/logo-advancecheck.svg">
+<link rel="stylesheet" href="styles.css?v=20260929-3">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="admin-screen">
+<aside class="sidebar">
+<div class="sidebar-brand"><img src="midia/logo-advancecheck.svg" alt="Advance Check"><span>ADMIN</span></div>
+<nav class="sidebar-nav">
+<a class="nav-link" data-page="dashboard" href="./dashboard.html"><span class="nav-icon">⌂</span><span>Visão geral</span></a>
 <a class="nav-link" data-page="team" href="./team.html"><span class="nav-icon">○</span><span>Equipe</span></a>
-<a class="nav-link" data-page="visits" href="./visits.html"><span class="nav-icon">◫</span><span>Visitas</span></a>
 <a class="nav-link" data-page="clients" href="./clients.html"><span class="nav-icon">□</span><span>Clientes</span></a>
-<a class="nav-link" data-page="reports" href="./reports.html"><span class="nav-icon">≡</span><span>Relatórios</span></a></nav><button id="logout-button" class="nav-link nav-danger" type="button"><span class="nav-icon">↪</span><span>Sair</span></button></aside><main class="content"><header class="topbar"><div><span class="eyebrow">FIRESTORE / CLIENTES</span><h1>Clientes</h1></div><div class="user-chip"><strong id="user-name">Administrador</strong><span id="user-email"></span></div></header><div class="section-title-row"><div><span class="eyebrow">BASE COMERCIAL</span><h2>Clientes cadastrados</h2></div><button id="refresh" class="secondary-button" type="button">Atualizar</button></div><section class="panel"><div class="table-wrap"><table><thead><tr><th>ID</th><th>Nome</th><th>Cidade</th><th>UF</th><th>Status</th><th>CNPJ</th><th>Endereço</th></tr></thead><tbody id="clients-table"><tr><td colspan="7" class="empty-row">Carregando...</td></tr></tbody></table></div></section><footer class="app-footer">Advance Admin • painel administrativo do Advance Check</footer></main></div><script type="module" src="clients.js"></script></body></html>
+<a class="nav-link" data-page="visits" href="./visits.html"><span class="nav-icon">◫</span><span>Visitas</span></a>
+<a class="nav-link" data-page="reports" href="./reports.html"><span class="nav-icon">≡</span><span>Relatórios</span></a>
+</nav>
+<button id="logout-button" class="nav-link nav-danger" type="button"><span class="nav-icon">↪</span><span>Sair</span></button>
+</aside>
+
+<main class="content clients-content">
+<header class="topbar"><div><span class="eyebrow">GESTÃO COMERCIAL</span><h1>Clientes</h1></div><div class="user-chip"><strong id="user-name">Administrador</strong><span id="user-email"></span></div></header>
+
+<section class="client-overview metrics-grid">
+<article class="metric-card"><span>Clientes cadastrados</span><strong id="client-total">—</strong><small>Base completa</small></article>
+<article class="metric-card"><span>Ativos</span><strong id="client-active">—</strong><small>Disponíveis para visitas</small></article>
+<article class="metric-card"><span>Estratégicos / alta</span><strong id="client-priority">—</strong><small>Importância comercial</small></article>
+<article class="metric-card"><span>Visitas registradas</span><strong id="client-visits-total">—</strong><small>Histórico da base</small></article>
+</section>
+
+<section class="panel clients-panel">
+<div class="team-panel-head">
+<div><span class="eyebrow">CARTEIRA</span><h2>Clientes cadastrados</h2></div>
+<div class="team-head-actions"><label class="team-search"><span>⌕</span><input id="client-search" type="search" placeholder="Buscar cliente, cidade ou endereço"></label><button id="refresh-clients" class="secondary-button" type="button">Atualizar</button><button id="new-client" class="primary-button compact" type="button">+ Novo cliente</button></div>
+</div>
+<div class="table-wrap"><table class="clients-table"><thead><tr><th>Cliente</th><th>Importância</th><th>Status</th><th>Visitas</th><th>Última visita</th><th>Distância da Advance</th><th>Cidade</th><th></th></tr></thead><tbody id="clients-table"><tr><td colspan="8" class="empty-row">Carregando clientes...</td></tr></tbody></table></div>
+</section>
+
+<footer class="app-footer">Advance Admin • gestão de clientes do Advance Check</footer>
+</main></div>
+
+<div id="client-profile-modal" class="team-modal" hidden>
+<div class="team-modal-backdrop" data-close-client-modal="client-profile"></div>
+<section class="team-modal-card profile-modal-card" role="dialog" aria-modal="true">
+<button class="modal-close" type="button" data-close-client-modal="client-profile">×</button>
+<header class="client-profile-hero">
+<div id="client-profile-avatar" class="client-profile-avatar">—</div>
+<div><span id="client-profile-status-label" class="eyebrow">CLIENTE</span><h2 id="client-profile-name">Cliente</h2><p id="client-profile-address">—</p><div class="client-profile-meta"><span id="client-profile-city">—</span><span id="client-profile-distance">—</span><span id="client-profile-code">—</span></div></div>
+<div class="client-profile-side"><span id="client-profile-importance" class="importance-badge">Não definida</span><span id="client-profile-status" class="profile-status">Ativo</span></div>
+</header>
+<section class="profile-kpis">
+<article><span>Visitas</span><strong id="client-kpi-visits">0</strong></article>
+<article><span>Concluídas</span><strong id="client-kpi-completed">0</strong></article>
+<article><span>Tempo em campo</span><strong id="client-kpi-time">—</strong></article>
+<article><span>Média / visita</span><strong id="client-kpi-average">—</strong></article>
+<article><span>Profissionais</span><strong id="client-kpi-professionals">0</strong></article>
+<article><span>Última visita</span><strong id="client-kpi-last">—</strong></article>
+</section>
+<section class="profile-section"><div class="profile-section-head"><div><span class="eyebrow">EVOLUÇÃO</span><h3>Visitas nos últimos 6 meses</h3></div></div><div id="client-month-chart" class="client-month-chart"></div></section>
+<section class="profile-section"><div class="profile-section-head"><div><span class="eyebrow">HISTÓRICO</span><h3>Últimas atividades</h3></div></div><div id="client-recent-visits" class="profile-recent-list"></div></section>
+<footer class="profile-actions"><button id="edit-client-from-profile" class="secondary-button" type="button">Editar cliente</button><button class="primary-button compact" type="button" data-close-client-modal="client-profile">Fechar perfil</button></footer>
+</section>
+</div>
+
+<div id="edit-client-modal" class="team-modal" hidden>
+<div class="team-modal-backdrop" data-close-client-modal="edit-client"></div>
+<section class="team-modal-card manage-modal-card" role="dialog" aria-modal="true">
+<button class="modal-close" type="button" data-close-client-modal="edit-client">×</button>
+<header class="manage-header"><div><span class="eyebrow">EDITAR CLIENTE</span><h2 id="edit-client-title">Cliente</h2></div></header>
+<form id="edit-client-form">
+<section class="manage-section"><div class="manage-grid">
+<label>Nome<input id="edit-client-name" required></label>
+<label>Importância<select id="edit-client-importance"><option>Não definida</option><option>Baixa</option><option>Média</option><option>Alta</option><option>Estratégico</option></select></label>
+<label>Cidade<input id="edit-client-city" required></label><label>UF<input id="edit-client-uf" maxlength="2" required></label>
+<label class="span-2">Endereço completo com número<input id="edit-client-address" required></label>
+<label>Status<select id="edit-client-status"><option value="Ativo">Ativo</option><option value="Provisorio">Provisório</option><option value="Inativo">Inativo</option></select></label>
+<label>Coordenadas<input id="edit-client-coords" readonly></label>
+</div><p class="new-member-note">Se o endereço mudar, as coordenadas serão recalculadas antes de salvar.</p></section>
+<p id="edit-client-message" class="manage-message"></p>
+<footer class="manage-actions"><button id="delete-client" class="danger-button" type="button">Excluir cliente</button><div><button class="secondary-button" type="button" data-close-client-modal="edit-client">Cancelar</button><button id="save-client" class="primary-button compact" type="submit">Salvar alterações</button></div></footer>
+</form>
+</section>
+</div>
+
+<div id="new-client-modal" class="team-modal" hidden>
+<div class="team-modal-backdrop" data-close-client-modal="new-client"></div>
+<section class="team-modal-card manage-modal-card client-register-card" role="dialog" aria-modal="true">
+<button class="modal-close" type="button" data-close-client-modal="new-client">×</button>
+<header class="manage-header"><div><span class="eyebrow">NOVO CLIENTE</span><h2>Cadastrar cliente</h2></div></header>
+<form id="new-client-form">
+<section class="manage-section">
+<div class="register-mode"><button class="register-mode-button active" data-client-mode="cnpj" type="button">Com CNPJ</button><button class="register-mode-button" data-client-mode="manual" type="button">Sem CNPJ</button></div>
+<div id="cnpj-fields" class="client-lookup-row"><label>CNPJ<input id="new-client-cnpj" inputmode="numeric" placeholder="00.000.000/0000-00"></label><button id="lookup-cnpj" class="secondary-button" type="button">Consultar CNPJ</button><span id="cnpj-status" class="lookup-status"></span></div>
+<div class="manage-grid client-register-grid">
+<label>Nome / estabelecimento<input id="new-client-name" required></label>
+<label>Importância<select id="new-client-importance"><option>Não definida</option><option>Baixa</option><option>Média</option><option>Alta</option><option>Estratégico</option></select></label>
+<label>CEP<input id="new-client-cep" inputmode="numeric" placeholder="00000-000"></label>
+<label>Logradouro<input id="new-client-street" required></label>
+<label>Número<input id="new-client-number" required></label>
+<label>Bairro<input id="new-client-neighborhood"></label>
+<label>Cidade<input id="new-client-city" required></label>
+<label>UF<input id="new-client-uf" maxlength="2" required></label>
+</div>
+<div class="address-tools"><button id="lookup-cep" class="text-button" type="button">Consultar CEP</button><span id="address-status" class="lookup-status"></span></div>
+</section>
+<p id="new-client-message" class="manage-message"></p>
+<footer class="manage-actions new-member-actions"><span></span><div><button class="secondary-button" type="button" data-close-client-modal="new-client">Cancelar</button><button id="create-client" class="primary-button compact" type="submit">Cadastrar cliente</button></div></footer>
+</form>
+</section>
+</div>
+
+<div id="delete-client-modal" class="team-modal" hidden><div class="team-modal-backdrop" data-close-client-modal="delete-client"></div><section class="team-modal-card delete-modal-card"><button class="modal-close" type="button" data-close-client-modal="delete-client">×</button><span class="delete-alert-icon">!</span><span class="eyebrow">EXCLUIR CLIENTE</span><h2>Remover da operação?</h2><p>O cliente será marcado como inativo para preservar o histórico das visitas e relatórios já vinculados.</p><div class="delete-actions"><button class="secondary-button" type="button" data-close-client-modal="delete-client">Cancelar</button><button id="confirm-delete-client" class="danger-button" type="button">Excluir cliente</button></div><p id="delete-client-message" class="manage-message"></p></section></div>
+
+<script type="module" src="clients.js?v=20260929-3"></script>
+</body></html>
