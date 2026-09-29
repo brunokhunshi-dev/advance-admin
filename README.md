@@ -7,11 +7,11 @@ Painel administrativo do Advance Check conectado ao projeto Firebase `banco-de-d
 1. `dashboard.html` — indicadores, filtros, gráficos, mapa e ranking.
 2. `team.html` — equipe, comparativos, perfis, permissões, desempenho e rotas.
 3. `clients.html` — carteira de clientes, importância, distância, cadastro, edição e perfil.
-4. `visits.html` — visitas técnicas e treinamentos, detalhes e relatórios integrados.
+4. `visits.html` — visitas comerciais, treinamentos e assistências técnicas, detalhes e relatórios integrados.
 
 `index.html` é exclusivamente a tela de login e diagnóstico.
 
-A antiga página separada de Relatórios foi removida. Os documentos da coleção `relatorios` continuam existindo no Firestore e são exibidos diretamente dentro da respectiva visita.
+A antiga página separada de Relatórios foi removida. Relatórios antigos da coleção `relatorios` continuam compatíveis. Novos relatórios são organizados em `relatorios_comerciais`, `relatorios_treinamentos` e `relatorios_assistencia_tecnica`.
 
 ## Estrutura visual
 
@@ -42,10 +42,11 @@ Clientes seguem o mesmo cadastro usado pelo Advance Check:
 
 A página separa:
 
-- Visitas técnicas;
-- Treinamentos.
+- Visitas comerciais;
+- Treinamentos;
+- Assistências técnicas.
 
-Cada tipo exibe dados próprios. O relatório é aberto em modal dentro da própria atividade, usando a coleção `relatorios`.
+Cada tipo exibe dados próprios. O relatório é aberto em modal dentro da própria atividade. Assistências técnicas usam a estrutura preenchida do formulário, em vez de texto genérico.
 
 As páginas usam deep links entre Equipe, Clientes e Visitas para manter a navegação conectada.
 
