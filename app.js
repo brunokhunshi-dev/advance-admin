@@ -191,8 +191,22 @@ async function runDiagnostics() {
 }
 
 async function requireAdmin(user) {
-    const snap = await getDoc(doc(db, "administradores", user.uid));
-    if (!snap.exists() || snap.data()?.ativo !== true) throw new Error("Esta conta não possui acesso ao painel administrativo.");
+    if (!db) throw new Error("Firestore não foi inicializado.");
+    const adminRef = doc(db, "administradores", user.uid);
+    const snap = await getDoc(adminRef);
+
+    if (!snap.exists()) {
+        const error = new Error("Esta conta ainda não foi cadastrada como administradora. UID: " + user.uid + " • Crie administradores/" + user.uid + " no Firestore com ativo: true.");
+        error.code = "admin/not-configured";
+        throw error;
+    }
+
+    if (snap.data()?.ativo !== true) {
+        const error = new Error("O cadastro de administrador existe, mas está inativo. UID: " + user.uid + " • Defina ativo: true em administradores/" + user.uid + ".");
+        error.code = "admin/inactive";
+        throw error;
+    }
+
     return { uid: user.uid, ...snap.data() };
 }
 
