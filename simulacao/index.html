@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#ffffff">
+<title>Advance Admin — Simulação</title>
+<link rel="icon" type="image/svg+xml" href="../midia/logo-advancecheck.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="../styles.css?v=20260930-13">
+<link rel="stylesheet" href="./simulacao.css?v=1">
+</head>
+<body>
+<div class="admin-screen demo-admin">
+<aside class="sidebar demo-sidebar">
+  <div class="sidebar-brand"><img src="../midia/logo-advancecheck.svg" alt="Advance Check"><span>DEMO</span></div>
+  <nav class="sidebar-nav" aria-label="Navegação da simulação">
+    <button class="nav-link active" data-view="dashboard" type="button"><span class="nav-icon">⌂</span><span>Visão geral</span></button>
+    <button class="nav-link" data-view="team" type="button"><span class="nav-icon">◎</span><span>Equipe</span></button>
+    <button class="nav-link" data-view="clients" type="button"><span class="nav-icon">▦</span><span>Clientes</span></button>
+    <button class="nav-link" data-view="visits" type="button"><span class="nav-icon">□</span><span>Visitas</span></button>
+  </nav>
+  <div class="demo-sidebar-note">Ambiente fictício<br>sem Firebase</div>
+</aside>
+
+<main class="content demo-content">
+  <header class="topbar demo-topbar">
+    <div><span class="eyebrow">ADVANCE CHECK • SIMULAÇÃO</span><h1 id="view-title">Dashboard populado</h1></div>
+    <div class="demo-generator">
+      <label>Seed<input id="demo-seed" value="ADVANCE-DEMO-2026"></label>
+      <label>Visitas<select id="demo-volume"><option value="260">260</option><option value="420" selected>420</option><option value="700">700</option></select></label>
+      <button id="generate-data" class="primary-button compact" type="button">Gerar cenário</button>
+      <button id="export-json" class="secondary-button compact" type="button">Baixar JSON</button>
+    </div>
+  </header>
+
+  <div class="demo-banner">
+    <strong>Dados fictícios.</strong>
+    <span>10 promotores + 6 assistentes, clientes, visitas, relatórios e indicadores coerentes entre as telas.</span>
+    <span id="scenario-meta"></span>
+  </div>
+
+  <section id="view-dashboard" class="demo-view">
+    <section class="dashboard-headline">
+      <div><span class="eyebrow">PERÍODO E SEGMENTAÇÃO</span><h2>Indicadores de visitas</h2></div>
+      <button id="clear-filters" class="text-button" type="button">Limpar filtros</button>
+    </section>
+    <section class="filters-panel panel">
+      <form id="filters-form" class="dashboard-filters demo-filters">
+        <label>Profissional<select id="filter-professional"><option value="">Todos</option></select></label>
+        <label>Status<select id="filter-status"><option value="">Todos</option><option>Pendente</option><option>Em andamento</option><option>Concluída</option><option>Cancelada</option></select></label>
+        <label>Tipo<select id="filter-type"><option value="">Todos</option><option>Visita comercial</option><option>Treinamento</option><option>Assistência técnica</option></select></label>
+        <label>Cliente<select id="filter-client"><option value="">Todos</option></select></label>
+        <div class="filter-actions"><button class="primary-button compact" type="submit">Aplicar filtros</button><button id="export-csv" class="secondary-button compact" type="button">Exportar CSV</button></div>
+      </form>
+    </section>
+
+    <section class="metrics-grid dashboard-metrics">
+      <article class="metric-card"><span>Total no período</span><strong id="metric-total">—</strong><small id="metric-total-sub">—</small></article>
+      <article class="metric-card"><span>Concluídas</span><strong id="metric-completed">—</strong><small id="metric-completed-sub">—</small></article>
+      <article class="metric-card"><span>Em andamento</span><strong id="metric-progress">—</strong><small id="metric-progress-sub">—</small></article>
+      <article class="metric-card"><span>Pendentes</span><strong id="metric-pending">—</strong><small id="metric-pending-sub">—</small></article>
+      <article class="metric-card"><span>Trein. / assistência</span><strong id="metric-training">—</strong><small>treinamentos / assistências</small></article>
+      <article class="metric-card"><span>Duração média</span><strong id="metric-duration">—</strong><small id="metric-duration-sub">—</small></article>
+    </section>
+
+    <section class="dashboard-grid">
+      <section class="panel chart-panel wide"><div class="panel-head"><div><span class="eyebrow">EVOLUÇÃO</span><h2>Atividades por semana</h2></div></div><div class="canvas-wrap"><canvas id="chart-daily" class="dashboard-canvas"></canvas></div></section>
+      <section class="panel chart-panel"><div class="panel-head"><div><span class="eyebrow">DISTRIBUIÇÃO</span><h2>Status</h2></div></div><div class="canvas-wrap donut-wrap"><canvas id="chart-status" class="dashboard-canvas"></canvas></div><div id="status-legend" class="chart-legend"></div></section>
+      <section class="panel chart-panel wide"><div class="panel-head"><div><span class="eyebrow">EQUIPE</span><h2>Atividades por profissional</h2></div></div><div class="canvas-wrap"><canvas id="chart-professionals" class="dashboard-canvas"></canvas></div></section>
+    </section>
+
+    <section class="panel map-panel"><div class="panel-head map-head"><div><span class="eyebrow">GEOLOCALIZAÇÃO</span><h2>Mapa de visitas</h2><p id="map-count" class="panel-caption"></p></div><div class="map-toolbar"><div class="segmented"><button class="map-mode active" data-map-mode="points" type="button">Pontos</button><button class="map-mode" data-map-mode="routes" type="button">Rotas</button></div></div></div><div id="demo-map" class="advance-map-theme demo-map"></div></section>
+
+    <section class="panel ranking-panel"><div class="panel-head"><div><span class="eyebrow">DESEMPENHO</span><h2>Ranking da equipe</h2></div></div><div class="table-wrap"><table><thead><tr><th>Profissional</th><th>Equipe</th><th>Total</th><th>Concluídas</th><th>Conclusão</th><th>Média</th></tr></thead><tbody id="ranking-table"></tbody></table></div></section>
+  </section>
+
+  <section id="view-team" class="demo-view" hidden>
+    <section class="demo-section-head"><div><span class="eyebrow">EQUIPE FICTÍCIA</span><h2>16 profissionais em operação</h2><p>10 promotores e 6 assistentes técnicos.</p></div></section>
+    <div class="team-comparison-grid">
+      <section class="comparison-panel panel"><div class="comparison-panel-head"><span class="eyebrow">PROMOTORIA</span><h3>10 promotores</h3></div><div id="demo-promoters" class="demo-team-list"></div></section>
+      <section class="comparison-panel panel"><div class="comparison-panel-head"><span class="eyebrow">ASSISTÊNCIA</span><h3>6 assistentes</h3></div><div id="demo-assistants" class="demo-team-list"></div></section>
+    </div>
+  </section>
+
+  <section id="view-clients" class="demo-view" hidden>
+    <section class="demo-section-head"><div><span class="eyebrow">CARTEIRA FICTÍCIA</span><h2>Clientes cadastrados</h2><p>CNPJs e estabelecimentos são gerados apenas para esta simulação.</p></div><label class="team-search"><span>⌕</span><input id="client-search" type="search" placeholder="Buscar cliente, CNPJ ou cidade"></label></section>
+    <section class="panel"><div class="table-wrap"><table class="clients-table"><thead><tr><th>Cliente</th><th>CNPJ fictício</th><th>Importância</th><th>Status</th><th>Visitas</th><th>Última visita</th><th>Cidade</th><th></th></tr></thead><tbody id="clients-table"></tbody></table></div></section>
+  </section>
+
+  <section id="view-visits" class="demo-view" hidden>
+    <section class="demo-section-head"><div><span class="eyebrow">OPERAÇÃO FICTÍCIA</span><h2>Histórico de visitas</h2><p>Visitas comerciais, treinamentos e assistências técnicas.</p></div><div class="demo-inline-filters"><select id="visits-type"><option value="">Todos os tipos</option><option>Visita comercial</option><option>Treinamento</option><option>Assistência técnica</option></select><select id="visits-status"><option value="">Todos os status</option><option>Pendente</option><option>Em andamento</option><option>Concluída</option><option>Cancelada</option></select></div></section>
+    <section class="panel"><div class="table-wrap"><table class="visits-table"><thead><tr><th>Cliente</th><th>Profissional</th><th>Data</th><th>Tipo</th><th>Status</th><th>Duração</th><th>Resultado</th><th></th></tr></thead><tbody id="visits-table"></tbody></table></div></section>
+  </section>
+
+  <footer class="app-footer">Advance Admin • ambiente de simulação local • nenhum dado é enviado ao Firebase</footer>
+</main>
+</div>
+
+<div id="demo-modal" class="team-modal" hidden>
+  <div class="team-modal-backdrop" data-close-demo-modal></div>
+  <section class="team-modal-card demo-modal-card" role="dialog" aria-modal="true">
+    <button class="modal-close" type="button" data-close-demo-modal>×</button>
+    <div id="demo-modal-content"></div>
+  </section>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script type="module" src="./app.js?v=1"></script>
+</body>
+</html>
