@@ -692,3 +692,38 @@ tbody tr:hover{background:#fafafd}
     white-space:pre-wrap;
     overflow-wrap:anywhere;
 }
+
+
+/* Imagens dos relatórios */
+.report-media-section{padding-top:18px;padding-bottom:20px}
+.report-media-grid{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+.report-media-thumb{
+  position:relative;flex:0 0 112px;width:112px;height:112px;padding:0;overflow:hidden;
+  border:0;border-radius:12px;background:#ececf1;cursor:pointer
+}
+.report-media-thumb img{display:block;width:100%;height:100%;object-fit:cover}
+.report-media-thumb-placeholder{
+  position:absolute;inset:0;display:grid;place-items:center;padding:8px;
+  color:var(--muted);font-size:9px;font-weight:700;text-align:center
+}
+.report-media-thumb.is-ready .report-media-thumb-placeholder{display:none}
+.report-media-thumb:focus-visible{outline:2px solid var(--navy);outline-offset:3px}
+.report-media-status{margin:10px 0 0;color:var(--muted);font-size:9px}
+.report-media-viewer-card{width:min(960px,100%)}
+.report-media-viewer-stage{
+  min-height:380px;display:grid;place-items:center;padding:18px;background:#101118;
+  color:#d7d8df;font-size:11px
+}
+.report-media-viewer-stage img{
+  display:block;max-width:100%;max-height:70vh;object-fit:contain
+}
+.report-media-viewer-card .profile-actions a{text-decoration:none}
+@media(max-width:760px){
+  .report-media-grid{gap:8px}
+  .report-media-thumb{flex-basis:96px;width:96px;height:96px}
+  .report-media-viewer-stage{min-height:280px;padding:10px}
+}
+@media(max-width:420px){
+  .report-media-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+  .report-media-thumb{width:100%;height:auto;aspect-ratio:1;flex:none}
+}
