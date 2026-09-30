@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "1.1",
+  "schemaVersion": "1.2",
   "database": "Cloud Firestore",
   "project": "Advance Check",
   "collections": {
@@ -46,7 +46,8 @@
     },
     "clientes": {
       "fields": {
-        "codigoCnpj": "string | null",
+        "cnpj": "string (14 dígitos, opcional)",
+        "codigoCnpj": "string (legado, somente compatibilidade)",
         "nome": "string",
         "cidade": "string",
         "uf": "string",
