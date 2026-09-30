@@ -4,7 +4,7 @@
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="theme-color" content="#FFFFFF">
 <title>Advance Admin — Visitas</title>
 <link rel="manifest" href="manifest.json"><link rel="icon" type="image/svg+xml" href="midia/logo-advancecheck.svg">
-<link rel="stylesheet" href="styles.css?v=20260930-12">
+<link rel="stylesheet" href="styles.css?v=20260930-13">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
@@ -78,51 +78,94 @@
 
 <div id="visit-detail-modal" class="team-modal" hidden>
 <div class="team-modal-backdrop" data-close-visit-modal="visit-detail"></div>
-<section class="team-modal-card visit-detail-card" role="dialog" aria-modal="true">
+<section class="team-modal-card visit-record-card" role="dialog" aria-modal="true" aria-labelledby="visit-detail-client">
 <button class="modal-close" type="button" data-close-visit-modal="visit-detail">×</button>
-<header class="visit-detail-hero">
-<div><span id="visit-detail-type" class="eyebrow">VISITA</span><h2 id="visit-detail-client">Cliente</h2><p id="visit-detail-meta">—</p></div>
+
+<header class="visit-record-hero">
+<div class="visit-record-heading">
+<span id="visit-detail-type" class="eyebrow">VISITA</span>
+<h2 id="visit-detail-client">Cliente</h2>
+<p id="visit-detail-meta">—</p>
+</div>
+<div class="visit-record-status">
 <span id="visit-detail-status" class="profile-status">—</span>
+<div class="visit-record-duration"><span>Tempo em campo</span><strong id="visit-detail-duration">—</strong></div>
+</div>
 </header>
-<section id="visit-detail-grid" class="visit-detail-grid"></section>
-<section class="profile-section">
-<div class="profile-section-head"><div><span class="eyebrow">LOCALIZAÇÃO E TEMPO</span><h3>Registro em campo</h3></div></div>
-<div id="visit-field-timeline" class="visit-field-timeline"></div>
+
+<section class="visit-record-strip" aria-label="Resumo da visita">
+<div><span>Profissional</span><strong id="visit-detail-professional">—</strong></div>
+<div><span>Data</span><strong id="visit-detail-date">—</strong></div>
+<div><span>Relatório</span><strong id="visit-detail-report-status">—</strong></div>
 </section>
-<section class="profile-section">
-<div class="profile-section-head"><div><span class="eyebrow">OBSERVAÇÕES</span><h3>Notas da atividade</h3></div></div>
+
+<div class="visit-record-body">
+<main class="visit-record-main">
+<section class="visit-record-section">
+<div class="visit-record-section-head"><span class="eyebrow">DADOS DA ATIVIDADE</span><h3>Informações registradas</h3></div>
+<div id="visit-detail-grid" class="visit-detail-grid visit-record-details"></div>
+</section>
+<section class="visit-record-section visit-record-notes">
+<div class="visit-record-section-head"><span class="eyebrow">OBSERVAÇÕES</span><h3>Notas da atividade</h3></div>
 <p id="visit-detail-note" class="visit-note">—</p>
 </section>
-<footer class="profile-actions">
+</main>
+
+<aside class="visit-record-aside">
+<div class="visit-record-section-head"><span class="eyebrow">CAMPO</span><h3>Check-in e checkout</h3></div>
+<div id="visit-field-timeline" class="visit-field-timeline"></div>
+</aside>
+</div>
+
+<footer class="profile-actions visit-record-actions">
+<button id="visit-export-pdf" class="secondary-button" type="button">Exportar PDF</button>
+<div class="profile-action-group">
 <button id="visit-open-client" class="secondary-button" type="button">Ver cliente</button>
 <button id="visit-open-professional" class="secondary-button" type="button">Ver profissional</button>
 <button id="visit-open-report" class="primary-button compact" type="button">Ver relatório</button>
+</div>
 </footer>
 </section>
 </div>
 
 <div id="visit-report-modal" class="team-modal" hidden>
 <div class="team-modal-backdrop" data-close-visit-modal="visit-report"></div>
-<section class="team-modal-card report-viewer-card" role="dialog" aria-modal="true">
+<section class="team-modal-card report-document-card" role="dialog" aria-modal="true" aria-labelledby="report-title">
 <button class="modal-close" type="button" data-close-visit-modal="visit-report">×</button>
-<header class="manage-header"><div><span id="report-type-label" class="eyebrow">RELATÓRIO</span><h2 id="report-title">Relatório da visita</h2></div></header>
-<section id="report-summary-grid" class="report-summary-grid"></section>
+
+<header class="report-document-hero">
+<div>
+<span id="report-type-label" class="eyebrow">RELATÓRIO</span>
+<h2 id="report-title">Relatório da visita</h2>
+<p id="report-document-subtitle">Registro consolidado da atividade em campo</p>
+</div>
+<span id="report-document-status" class="profile-status">—</span>
+</header>
+
+<section id="report-summary-grid" class="report-document-meta"></section>
+
+<div class="report-document-body">
 <div id="report-standard-content">
-<section class="report-text-section">
-<span class="eyebrow">RELATÓRIO FINAL</span>
+<section class="report-primary-section">
+<div class="report-section-heading"><span class="eyebrow">RELATÓRIO FINAL</span><h3>Registro da atividade</h3></div>
 <div id="report-current-text" class="report-current-text">Nenhum relatório salvo.</div>
 </section>
-<section class="profile-section">
-<div class="profile-section-head"><div><span class="eyebrow">DADOS REGISTRADOS</span><h3>Informações completas</h3></div></div>
+<section class="report-support-section">
+<div class="report-section-heading"><span class="eyebrow">DADOS REGISTRADOS</span><h3>Informações complementares</h3></div>
 <div id="report-fields" class="report-fields"></div>
 </section>
-<section class="profile-section">
-<div class="profile-section-head"><div><span class="eyebrow">VERSÕES</span><h3>Histórico do relatório</h3></div></div>
+<section class="report-support-section report-history-section">
+<div class="report-section-heading"><span class="eyebrow">VERSÕES</span><h3>Histórico do relatório</h3></div>
 <div id="report-history" class="report-history"></div>
 </section>
 </div>
-<div id="report-assistance-content" class="admin-assistance-report" hidden></div>
-<footer class="profile-actions"><button class="primary-button compact" type="button" data-close-visit-modal="visit-report">Fechar relatório</button></footer>
+<div id="report-assistance-content" class="admin-assistance-report report-assistance-document" hidden></div>
+</div>
+
+<footer class="profile-actions report-document-actions">
+<button id="report-export-pdf" class="secondary-button" type="button">Exportar PDF</button>
+<button class="primary-button compact" type="button" data-close-visit-modal="visit-report">Fechar relatório</button>
+</footer>
 </section>
 </div>
 
@@ -144,6 +187,6 @@
 </section>
 </div>
 
-<script type="module" src="visits.js?v=20260930-12"></script>
+<script type="module" src="visits.js?v=20260930-13"></script>
 </body>
 </html>
