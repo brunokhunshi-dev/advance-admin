@@ -2,6 +2,7 @@ import {
     $, auth, db, collection, getDocs, requireAdmin, setupLayout, escapeHtml,
     asDate, formatDateTime, formatDuration, statusClass, normalizeVisitType
 } from "./core.js";
+import { preparePrintWindow, printDocument } from "./print-document.js";
 
 let activities=[];
 let clients=new Map();
@@ -223,50 +224,63 @@ function fieldTimeline(activity){
         '<article class="field-timeline-item"><span class="field-timeline-dot"></span><div><strong>'+label+'</strong><small>'+formatDateTime(date)+'</small><p>'+escapeHtml(address||gps||"Localização não registrada")+'</p></div></article>'
     ).join("");
 }
+function visitDetailEntries(activity,report=reportFor(activity)){
+    const type=activityType(activity);
+    const assistance=assistanceData(report);
+
+    if(type==="Treinamento"){
+        return[
+            {label:"Categoria",value:activity.categoriaTreinamento||"—"},
+            {label:"Participantes",value:String(trainingParticipants(activity))},
+            {label:"Público atendido",value:activity.publicoAtendido||"—"},
+            {label:"Resultado",value:activity.resultado||"—",wide:true},
+            {label:"Motivo de fechamento",value:activity.motivoFechamentoManual||"—",wide:true}
+        ];
+    }
+
+    if(type==="Assistência técnica"){
+        return[
+            {label:"Produto",value:assistance.produto||"—"},
+            {label:"Cliente final",value:assistance.clienteFinal||"—"},
+            {label:"Resultado",value:assistance.resultado||activity.resultadoAssistencia||activity.resultado||"—"},
+            {label:"Queixa",value:assistance.queixa||"—",wide:true},
+            {label:"Próximo passo",value:assistance.proximoPasso||activity.proximoPassoAssistencia||"—",wide:true}
+        ];
+    }
+
+    return[
+        {label:"Objetivo",value:activity.objetivo||"—",wide:true},
+        {label:"Oportunidade identificada",value:activity.oportunidadeIdentificada||"—",wide:true},
+        {label:"Resultado",value:activity.resultado||"—"},
+        {label:"Tipo de fechamento",value:activity.fechamentoTipo||"—"},
+        {label:"Análise do fechamento",value:activity.fechamentoAnaliseStatus||"—"}
+    ];
+}
+
 function openDetail(activity){
     selectedActivity=activity;
     const type=activityType(activity);
     const report=reportFor(activity);
-    const assistance=assistanceData(report);
+    const hasReport=!!(report||activity.relatorioId);
 
     $("#visit-detail-type").textContent=type.toUpperCase();
     $("#visit-detail-client").textContent=clientName(activity.clienteId);
-    $("#visit-detail-meta").textContent=personName(activity.ptvId)+" • "+formatDateTime(activity.data);
+    $("#visit-detail-meta").textContent=type+" • registro operacional";
     $("#visit-detail-status").textContent=activity.status||"—";
     $("#visit-detail-status").className="profile-status "+(activity.status==="Concluída"?"is-active":"");
+    $("#visit-detail-duration").textContent=formatDuration(activityDuration(activity));
+    $("#visit-detail-professional").textContent=personName(activity.ptvId);
+    $("#visit-detail-date").textContent=formatDateTime(activity.data);
+    $("#visit-detail-report-status").textContent=hasReport?"Disponível":"Não disponível";
 
-    if(type==="Treinamento"){
-        $("#visit-detail-grid").innerHTML=[
-            detailItem("Categoria",activity.categoriaTreinamento||"—"),
-            detailItem("Participantes",String(trainingParticipants(activity))),
-            detailItem("Público atendido",activity.publicoAtendido||"—"),
-            detailItem("Duração",formatDuration(activityDuration(activity))),
-            detailItem("Resultado",activity.resultado||"—",true),
-            detailItem("Motivo de fechamento",activity.motivoFechamentoManual||"—",true)
-        ].join("");
-    }else if(type==="Assistência técnica"){
-        $("#visit-detail-grid").innerHTML=[
-            detailItem("Produto",assistance.produto||"—"),
-            detailItem("Cliente final",assistance.clienteFinal||"—"),
-            detailItem("Resultado",assistance.resultado||activity.resultadoAssistencia||activity.resultado||"—"),
-            detailItem("Duração",formatDuration(activityDuration(activity))),
-            detailItem("Queixa",assistance.queixa||"—",true),
-            detailItem("Próximo passo",assistance.proximoPasso||activity.proximoPassoAssistencia||"—",true)
-        ].join("");
-    }else{
-        $("#visit-detail-grid").innerHTML=[
-            detailItem("Objetivo",activity.objetivo||"—",true),
-            detailItem("Oportunidade identificada",activity.oportunidadeIdentificada||"—",true),
-            detailItem("Duração",formatDuration(activityDuration(activity))),
-            detailItem("Resultado",activity.resultado||"—"),
-            detailItem("Tipo de fechamento",activity.fechamentoTipo||"—"),
-            detailItem("Análise do fechamento",activity.fechamentoAnaliseStatus||"—")
-        ].join("");
-    }
+    $("#visit-detail-grid").innerHTML=visitDetailEntries(activity,report)
+        .map(item=>detailItem(item.label,item.value,item.wide))
+        .join("");
 
     $("#visit-field-timeline").innerHTML=fieldTimeline(activity);
     $("#visit-detail-note").textContent=activity.nota||"Nenhuma observação registrada.";
-    $("#visit-open-report").textContent=report||activity.relatorioId?"Ver relatório":"Relatório não disponível";
+    $("#visit-open-report").textContent=hasReport?"Ver relatório":"Relatório não disponível";
+    $("#visit-open-report").disabled=!hasReport;
     openModal("visit-detail");
 }
 
@@ -454,11 +468,14 @@ function openReport(activity){
 
     $("#report-type-label").textContent="RELATÓRIO • "+type.toUpperCase();
     $("#report-title").textContent=clientName(activity.clienteId);
+    $("#report-document-subtitle").textContent=personName(activity.ptvId)+" • "+formatDateTime(activity.data);
+    $("#report-document-status").textContent=activity.status||"—";
+    $("#report-document-status").className="profile-status "+(activity.status==="Concluída"?"is-active":"");
     $("#report-summary-grid").innerHTML=[
         detailItem("Profissional",personName(activity.ptvId)),
-        detailItem("Cliente",clientName(activity.clienteId)),
-        detailItem("Data",formatDateTime(activity.data)),
-        detailItem("Status",activity.status||"—")
+        detailItem("Data da atividade",formatDateTime(activity.data)),
+        detailItem("Tempo em campo",formatDuration(activityDuration(activity))),
+        detailItem("Relatório",report?"Salvo":"Não disponível")
     ].join("");
 
     currentReportMedia=new Map();
@@ -492,6 +509,216 @@ function openReport(activity){
     openModal("visit-report");
 }
 
+function printFieldGrid(items){
+    return '<div class="field-grid">'+items.map(item=>
+        '<div class="field '+(item.wide?"wide":"")+'"><span>'+escapeHtml(item.label)+'</span><strong>'+escapeHtml(item.value??"—")+'</strong></div>'
+    ).join("")+'</div>';
+}
+
+function printTimeline(activity){
+    return '<div class="timeline">'+[
+        {label:"Check-in",date:activity.checkinDataHora,address:activity.checkinEndereco||activity.checkinGps||"Localização não registrada"},
+        {label:"Checkout",date:activity.checkoutDataHora,address:activity.checkoutEndereco||activity.checkoutGps||"Localização não registrada"}
+    ].map(item=>
+        '<div class="timeline-item"><b>'+escapeHtml(item.label)+'</b><div><strong>'+escapeHtml(formatDateTime(item.date))+'</strong><small>'+escapeHtml(item.address)+'</small></div></div>'
+    ).join("")+'</div>';
+}
+
+function exportVisitPdf(){
+    if(!selectedActivity)return;
+    const activity=selectedActivity;
+    const report=reportFor(activity);
+    const type=activityType(activity);
+
+    printDocument({
+        kicker:"Registro de visita • "+type,
+        title:clientName(activity.clienteId),
+        subtitle:personName(activity.ptvId),
+        badge:activity.status||"—",
+        meta:[
+            {label:"Data",value:formatDateTime(activity.data)},
+            {label:"Tempo em campo",value:formatDuration(activityDuration(activity))},
+            {label:"Profissional",value:personName(activity.ptvId)},
+            {label:"Relatório",value:report||activity.relatorioId?"Disponível":"Não disponível"}
+        ],
+        sections:[
+            {
+                eyebrow:"Atividade",
+                title:"Informações registradas",
+                html:printFieldGrid(visitDetailEntries(activity,report))
+            },
+            {
+                eyebrow:"Campo",
+                title:"Check-in e checkout",
+                html:printTimeline(activity)
+            },
+            {
+                eyebrow:"Observações",
+                title:"Notas da atividade",
+                html:'<div class="note">'+escapeHtml(activity.nota||"Nenhuma observação registrada.")+'</div>'
+            }
+        ]
+    });
+}
+
+function reportPrintMarkup(report,fallbackText,mediaUrls){
+    const blocks=reportMediaBlocks(report).filter(block=>block?.kind==="text"||isImageBlock(block));
+    if(!blocks.length)return '<div class="prose">'+escapeHtml(fallbackText||"Nenhum texto registrado.")+'</div>';
+
+    return blocks.map(block=>{
+        if(block?.kind==="text"){
+            const text=String(block.text||"").trim();
+            return text?'<p class="report-block">'+escapeHtml(text)+'</p>':"";
+        }
+        const label=block.originalName||block.name||"Imagem do relatório";
+        const url=mediaUrls.get(block.id);
+        if(!url)return '<div class="field wide"><span>Imagem anexada</span><strong>'+escapeHtml(label)+'</strong></div>';
+        return '<figure class="attachment"><img src="'+escapeHtml(url)+'" alt="'+escapeHtml(label)+'"><figcaption>'+escapeHtml(label)+'</figcaption></figure>';
+    }).join("");
+}
+
+function assistancePrintSections(report,mediaUrls){
+    const d=assistanceData(report);
+    const specification=d.houveEspecificacao==="Sim"
+        ?"Sim"+(d.numeroEspecificacao?" • "+d.numeroEspecificacao:"")
+        :(d.houveEspecificacao||"Não informado");
+    const climate=d.impactoClimatico==="Sim"
+        ?"Sim"+(d.impactoClimaticoDetalhe?" • "+d.impactoClimaticoDetalhe:"")
+        :(d.impactoClimatico||"Não informado");
+
+    return[
+        {
+            eyebrow:"Cliente e aplicação",
+            title:"Contexto do atendimento",
+            html:printFieldGrid([
+                {label:"Cliente final",value:d.clienteFinal||"Não informado"},
+                {label:"Contato / setor",value:[d.contato,d.setor].filter(Boolean).join(" / ")||"Não informado"},
+                {label:"Endereço de aplicação",value:d.enderecoAplicacao||"Não informado",wide:true},
+                {label:"Empresa de aplicação",value:d.empresaAplicacao||"Não informado"},
+                {label:"Responsável da empresa",value:d.responsavelEmpresa||"Não informado"},
+                {label:"Acompanhado por",value:d.acompanhadoPor||"Não informado"},
+                {label:"Equipamento / superfície",value:d.superficie||"Não informado"},
+                {label:"Data da aplicação",value:d.dataAplicacao||"Não informado"},
+                {label:"Especificação",value:specification}
+            ])
+        },
+        {
+            eyebrow:"Produto",
+            title:"Produto e queixa",
+            html:printFieldGrid([
+                {label:"Produto",value:d.produto||"Não informado"},
+                {label:"Lote",value:d.lote||"Não informado"},
+                {label:"Cor",value:d.cor||"Não informado"},
+                {label:"Queixa",value:d.queixa||"Não informado",wide:true},
+                {label:"Esquema de pintura",value:d.esquemaPintura||"Não informado",wide:true}
+            ])
+        },
+        {
+            eyebrow:"Aplicação",
+            title:"Preparo e condições",
+            html:printFieldGrid([
+                {label:"Preparo da superfície",value:d.preparoSuperficie||"Não informado",wide:true},
+                {label:"Métodos de limpeza",value:Array.isArray(d.metodosLimpeza)?d.metodosLimpeza.join(", "):(d.metodosLimpeza||"Não informado"),wide:true},
+                {label:"Impacto climático / intempéries",value:climate,wide:true},
+                {label:"Ferramenta de aplicação",value:Array.isArray(d.ferramentasAplicacao)?d.ferramentasAplicacao.join(", "):(d.ferramentasAplicacao||"Não informado"),wide:true}
+            ])
+        },
+        {
+            eyebrow:"Verificação",
+            title:"Relatório técnico",
+            html:printFieldGrid([
+                {label:"Itens verificados",value:Array.isArray(d.itensVerificados)?d.itensVerificados.join(", "):(d.itensVerificados||"Não informado")},
+                {label:"Umidade medida",value:d.umidade||"Não informado"},
+                {label:"Referência / limite",value:d.umidadeReferencia||"Não informado"}
+            ])+reportPrintMarkup(report,d.constatacoes,mediaUrls)
+        },
+        {
+            eyebrow:"Fechamento",
+            title:"Conclusão e próximos passos",
+            html:printFieldGrid([
+                {label:"Ações definidas",value:d.acoesDefinidas||"Não informado",wide:true},
+                {label:"Conclusão técnica",value:d.conclusaoTecnica||"Não informado",wide:true},
+                {label:"Resultado da assistência",value:d.resultado||"Não informado"},
+                {label:"Próximo passo",value:d.proximoPasso||"Não informado",wide:true}
+            ])
+        }
+    ];
+}
+
+async function exportReportPdf(){
+    if(!selectedActivity)return;
+    const activity=selectedActivity;
+    const report=reportFor(activity);
+    const type=activityType(activity);
+    const popup=preparePrintWindow("Preparando relatório");
+
+    try{
+        const imageBlocks=reportMediaBlocks(report).filter(isImageBlock);
+        const mediaUrls=new Map();
+        const results=await Promise.allSettled(imageBlocks.map(async block=>({
+            id:block.id,
+            url:await mediaReadUrl(activity.id,block.id,"original")
+        })));
+        results.forEach(result=>{
+            if(result.status==="fulfilled")mediaUrls.set(result.value.id,result.value.url);
+        });
+
+        let sections=[];
+        if(type==="Assistência técnica"){
+            sections=assistancePrintSections(report,mediaUrls);
+        }else{
+            const keys=type==="Treinamento"
+                ?["categoriaTreinamento","quantidadeParticipantes","publicoAtendido","resultado","checkinDataHora","checkinEndereco","checkoutDataHora","checkoutEndereco","fechamentoTipo","fechamentoAnaliseStatus","motivoFechamentoManual"]
+                :["objetivo","oportunidadeIdentificada","resultado","checkinDataHora","checkinEndereco","checkoutDataHora","checkoutEndereco","fechamentoTipo","fechamentoAnaliseStatus","motivoFechamentoManual"];
+            const history=Array.isArray(report?.historico)?report.historico:[];
+
+            sections=[
+                {
+                    eyebrow:"Relatório final",
+                    title:"Registro da atividade",
+                    html:reportPrintMarkup(report,report?.textoAtual||"Nenhum texto final salvo neste relatório.",mediaUrls)
+                },
+                {
+                    eyebrow:"Dados registrados",
+                    title:"Informações complementares",
+                    html:printFieldGrid(keys.map(key=>({label:FIELD_LABELS[key]||key,value:reportValue(report,activity,key),wide:["objetivo","oportunidadeIdentificada","resultado","motivoFechamentoManual"].includes(key)})))
+                }
+            ];
+
+            if(history.length){
+                sections.push({
+                    eyebrow:"Histórico",
+                    title:"Versões anteriores",
+                    html:'<table><thead><tr><th>Versão</th><th>Data</th><th>Conteúdo</th></tr></thead><tbody>'+
+                        history.map((entry,index)=>{
+                            const text=typeof entry==="string"?entry:(entry?.texto||entry?.textoAtual||entry?.conteudo||entry?.relatorio||"");
+                            const date=typeof entry==="object"?(entry?.salvoEm||entry?.data||entry?.criadoEm||entry?.atualizadoEm):null;
+                            return '<tr><td>'+(index+1)+'</td><td>'+escapeHtml(date?formatDateTime(date):"—")+'</td><td>'+escapeHtml(text||"—")+'</td></tr>';
+                        }).join("")+
+                    '</tbody></table>'
+                });
+            }
+        }
+
+        printDocument({
+            kicker:"Relatório • "+type,
+            title:clientName(activity.clienteId),
+            subtitle:personName(activity.ptvId)+" • "+formatDateTime(activity.data),
+            badge:activity.status||"—",
+            meta:[
+                {label:"Profissional",value:personName(activity.ptvId)},
+                {label:"Data",value:formatDateTime(activity.data)},
+                {label:"Tempo em campo",value:formatDuration(activityDuration(activity))},
+                {label:"Cliente",value:clientName(activity.clienteId)}
+            ],
+            sections
+        },popup);
+    }catch(error){
+        popup.close();
+        alert(error.message||"Não foi possível preparar o relatório para impressão.");
+    }
+}
+
 function openModal(name){const modal=$("#"+name+"-modal");if(modal){modal.hidden=false;document.body.classList.add("modal-open")}}
 function closeModal(name){const modal=$("#"+name+"-modal");if(modal)modal.hidden=true;if(![...document.querySelectorAll(".team-modal")].some(m=>!m.hidden))document.body.classList.remove("modal-open")}
 function selectTab(tab){
@@ -521,6 +748,8 @@ function bindEvents(){
     $("#training-visits-table").addEventListener("click",handleAction);
     $("#assistance-visits-table").addEventListener("click",handleAction);
     document.querySelectorAll("[data-close-visit-modal]").forEach(button=>button.addEventListener("click",()=>closeModal(button.dataset.closeVisitModal)));
+    $("#visit-export-pdf").addEventListener("click",exportVisitPdf);
+    $("#report-export-pdf").addEventListener("click",exportReportPdf);
     $("#visit-open-report").addEventListener("click",()=>selectedActivity&&openReport(selectedActivity));
     $("#visit-open-client").addEventListener("click",()=>{if(selectedActivity?.clienteId)location.href="./clients.html?client="+encodeURIComponent(selectedActivity.clienteId)});
     $("#visit-open-professional").addEventListener("click",()=>{if(selectedActivity?.ptvId)location.href="./team.html?member="+encodeURIComponent(selectedActivity.ptvId)});
