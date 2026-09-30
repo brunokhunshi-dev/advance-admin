@@ -1,4 +1,4 @@
-const CACHE_NAME = "advance-admin-v13";
+const CACHE_NAME = "advance-admin-v14";
 const APP_SHELL = [
     "./",
     "./index.html",
