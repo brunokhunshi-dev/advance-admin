@@ -1,5 +1,5 @@
 import {
-    $, db, collection, getDocs, requireAdmin, setupLayout, escapeHtml,
+    $, auth, db, collection, getDocs, requireAdmin, setupLayout, escapeHtml,
     asDate, formatDateTime, formatDuration, statusClass, normalizeVisitType
 } from "./core.js";
 
@@ -17,6 +17,10 @@ const REPORT_COLLECTIONS=[
     "relatorios_treinamentos",
     "relatorios_assistencia_tecnica"
 ];
+
+const MEDIA_API_BASE="https://advance-media-api.brunokhunshi.workers.dev";
+let reportMediaGeneration=0;
+let currentReportMedia=new Map();
 
 function activityType(activity){return normalizeVisitType(activity)}
 function typeKey(activity){
@@ -345,6 +349,169 @@ function renderAssistanceReport(report){
         ])
     ].join("");
 }
+function reportImageBlocks(report){
+    const blocks=report?.conteudoRelatorio?.blocos;
+    if(!Array.isArray(blocks))return[];
+    return blocks.filter(block=>{
+        if(block?.kind!=="media"||!block.id)return false;
+        const type=String(block.type||"").toLowerCase();
+        const name=String(block.name||block.originalName||"").toLowerCase();
+        return type.startsWith("image/")||/\.(jpe?g|png|webp|avif|heic|heif)$/i.test(name);
+    });
+}
+
+async function mediaReadUrl(activityId,mediaId,variant="thumbnail"){
+    if(!auth.currentUser)throw new Error("Sessão expirada. Entre novamente.");
+    const token=await auth.currentUser.getIdToken();
+    const response=await fetch(MEDIA_API_BASE+"/v1/media/read-url",{
+        method:"POST",
+        headers:{
+            "Authorization":"Bearer "+token,
+            "Content-Type":"application/json"
+        },
+        body:JSON.stringify({activityId,mediaId,variant})
+    });
+
+    let data=null;
+    try{data=await response.json()}catch{}
+    if(!response.ok)throw new Error(data?.error||"Não foi possível acessar a imagem.");
+    if(!data?.url)throw new Error("URL da imagem não retornada.");
+    return data.url;
+}
+
+function resetReportMedia(){
+    reportMediaGeneration++;
+    currentReportMedia=new Map();
+    const section=$("#report-media-section");
+    if(section)section.hidden=true;
+    const grid=$("#report-media-grid");
+    if(grid)grid.replaceChildren();
+    const count=$("#report-media-count");
+    if(count)count.textContent="0 imagens";
+    const status=$("#report-media-status");
+    if(status)status.textContent="";
+}
+
+function imageCard(block){
+    const button=document.createElement("button");
+    button.type="button";
+    button.className="report-media-thumb";
+    button.dataset.mediaId=block.id;
+    button.title=block.originalName||block.name||"Imagem do relatório";
+    button.setAttribute("aria-label","Abrir "+(block.originalName||block.name||"imagem do relatório"));
+
+    const placeholder=document.createElement("span");
+    placeholder.className="report-media-thumb-placeholder";
+    placeholder.textContent="Carregando...";
+
+    const img=document.createElement("img");
+    img.alt="";
+    img.loading="lazy";
+    img.hidden=true;
+
+    button.append(placeholder,img);
+    return button;
+}
+
+async function renderReportMedia(report,activity){
+    resetReportMedia();
+    const blocks=reportImageBlocks(report);
+    if(!blocks.length)return;
+
+    const generation=reportMediaGeneration;
+    const section=$("#report-media-section");
+    const grid=$("#report-media-grid");
+    const count=$("#report-media-count");
+    const status=$("#report-media-status");
+
+    section.hidden=false;
+    count.textContent=blocks.length+" "+(blocks.length===1?"imagem":"imagens");
+    status.textContent="Carregando miniaturas...";
+
+    currentReportMedia=new Map(blocks.map(block=>[block.id,block]));
+    const cards=new Map();
+
+    blocks.forEach(block=>{
+        const card=imageCard(block);
+        cards.set(block.id,card);
+        grid.append(card);
+    });
+
+    const results=await Promise.allSettled(blocks.map(async block=>{
+        const url=await mediaReadUrl(activity.id,block.id,"thumbnail");
+        return {block,url};
+    }));
+
+    if(generation!==reportMediaGeneration)return;
+
+    let failures=0;
+    results.forEach(result=>{
+        if(result.status!=="fulfilled"){
+            failures++;
+            return;
+        }
+        const {block,url}=result.value;
+        const card=cards.get(block.id);
+        const img=card?.querySelector("img");
+        const placeholder=card?.querySelector(".report-media-thumb-placeholder");
+        if(!card||!img)return;
+
+        img.onload=()=>{
+            img.hidden=false;
+            if(placeholder)placeholder.hidden=true;
+            card.classList.add("is-ready");
+        };
+        img.onerror=()=>{
+            if(placeholder)placeholder.textContent="Prévia indisponível";
+        };
+        img.src=url;
+    });
+
+    status.textContent=failures
+        ?failures+" miniatura(s) não puderam ser carregadas."
+        :"";
+}
+
+async function openReportMedia(block){
+    if(!selectedActivity||!block)return;
+
+    const modal=$("#report-media-modal");
+    const title=$("#report-media-viewer-title");
+    const img=$("#report-media-viewer-image");
+    const loading=$("#report-media-viewer-loading");
+    const openLink=$("#report-media-viewer-open");
+
+    title.textContent=block.originalName||block.name||"Imagem do relatório";
+    img.hidden=true;
+    img.removeAttribute("src");
+    img.alt=block.originalName||block.name||"Imagem do relatório";
+    loading.hidden=false;
+    loading.textContent="Carregando imagem...";
+    openLink.hidden=true;
+    openLink.removeAttribute("href");
+    openModal("report-media");
+
+    try{
+        const url=await mediaReadUrl(selectedActivity.id,block.id,"original");
+        if(modal.hidden)return;
+
+        img.onload=()=>{
+            loading.hidden=true;
+            img.hidden=false;
+        };
+        img.onerror=()=>{
+            loading.hidden=false;
+            loading.textContent="Não foi possível exibir esta imagem.";
+        };
+        img.src=url;
+        openLink.href=url;
+        openLink.hidden=false;
+    }catch(error){
+        loading.hidden=false;
+        loading.textContent=error.message||"Não foi possível abrir a imagem.";
+    }
+}
+
 function openReport(activity){
     selectedActivity=activity;
     const report=reportFor(activity);
@@ -358,6 +525,12 @@ function openReport(activity){
         detailItem("Data",formatDateTime(activity.data)),
         detailItem("Status",activity.status||"—")
     ].join("");
+
+    renderReportMedia(report,activity).catch(error=>{
+        console.warn("[Visitas] Não foi possível carregar as imagens do relatório:",error);
+        const status=$("#report-media-status");
+        if(status)status.textContent=error.message||"Não foi possível carregar as imagens.";
+    });
 
     const standard=$("#report-standard-content");
     const assistance=$("#report-assistance-content");
@@ -417,7 +590,19 @@ function bindEvents(){
     $("#visit-open-report").addEventListener("click",()=>selectedActivity&&openReport(selectedActivity));
     $("#visit-open-client").addEventListener("click",()=>{if(selectedActivity?.clienteId)location.href="./clients.html?client="+encodeURIComponent(selectedActivity.clienteId)});
     $("#visit-open-professional").addEventListener("click",()=>{if(selectedActivity?.ptvId)location.href="./team.html?member="+encodeURIComponent(selectedActivity.ptvId)});
-    document.addEventListener("keydown",event=>{if(event.key==="Escape"){closeModal("visit-report");closeModal("visit-detail")}});
+    $("#report-media-grid").addEventListener("click",event=>{
+        const button=event.target.closest("[data-media-id]");
+        if(!button)return;
+        const block=currentReportMedia.get(button.dataset.mediaId);
+        if(block)openReportMedia(block);
+    });
+    document.addEventListener("keydown",event=>{
+        if(event.key==="Escape"){
+            closeModal("report-media");
+            closeModal("visit-report");
+            closeModal("visit-detail");
+        }
+    });
 }
 async function safeCollection(name){
     try{
