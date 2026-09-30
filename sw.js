@@ -1,4 +1,4 @@
-const CACHE_NAME = "advance-admin-v15";
+const CACHE_NAME = "advance-admin-v16";
 const APP_SHELL = [
     "./",
     "./index.html",
@@ -17,7 +17,11 @@ const APP_SHELL = [
     "./team-active-filter.js",
     "./firebase-config.js",
     "./manifest.json",
-    "./midia/logo-advancecheck.svg"
+    "./midia/logo-advancecheck.svg",
+    "./simulacao/index.html",
+    "./simulacao/simulacao.css",
+    "./simulacao/populator.js",
+    "./simulacao/app.js"
 ];
 
 self.addEventListener("install", event => {
