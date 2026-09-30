@@ -107,6 +107,11 @@
 <button class="modal-close" type="button" data-close-visit-modal="visit-report">×</button>
 <header class="manage-header"><div><span id="report-type-label" class="eyebrow">RELATÓRIO</span><h2 id="report-title">Relatório da visita</h2></div></header>
 <section id="report-summary-grid" class="report-summary-grid"></section>
+<section id="report-media-section" class="profile-section report-media-section" hidden>
+<div class="profile-section-head"><div><span class="eyebrow">IMAGENS</span><h3>Mídias do relatório</h3></div><span id="report-media-count" class="collection-badge">0 imagens</span></div>
+<div id="report-media-grid" class="report-media-grid"></div>
+<p id="report-media-status" class="report-media-status" role="status" aria-live="polite"></p>
+</section>
 <div id="report-standard-content">
 <section class="report-text-section">
 <span class="eyebrow">RELATÓRIO FINAL</span>
@@ -126,6 +131,24 @@
 </section>
 </div>
 
-<script type="module" src="visits.js?v=20260929-10"></script>
+<div id="report-media-modal" class="team-modal" hidden>
+<div class="team-modal-backdrop" data-close-visit-modal="report-media"></div>
+<section class="team-modal-card report-media-viewer-card" role="dialog" aria-modal="true" aria-labelledby="report-media-viewer-title">
+<button class="modal-close" type="button" data-close-visit-modal="report-media">×</button>
+<header class="manage-header">
+<div><span class="eyebrow">IMAGEM DO RELATÓRIO</span><h2 id="report-media-viewer-title">Imagem</h2></div>
+</header>
+<div class="report-media-viewer-stage">
+<span id="report-media-viewer-loading">Carregando imagem...</span>
+<img id="report-media-viewer-image" alt="" hidden>
+</div>
+<footer class="profile-actions">
+<a id="report-media-viewer-open" class="secondary-button" href="#" target="_blank" rel="noopener" hidden>Abrir original</a>
+<button class="primary-button compact" type="button" data-close-visit-modal="report-media">Fechar</button>
+</footer>
+</section>
+</div>
+
+<script type="module" src="visits.js?v=20260930-11"></script>
 </body>
 </html>
