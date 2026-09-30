@@ -739,3 +739,116 @@ tbody tr:hover{background:#fafafd}
 @media(max-width:760px){
   .report-media-viewer-stage{min-height:280px;padding:10px}
 }
+
+
+/* Ações de perfis e exportação */
+.profile-action-group{display:flex;align-items:center;gap:8px}
+.profile-actions:has(.profile-action-group){justify-content:space-between}
+
+/* Modal de visita — arquitetura operacional */
+.visit-record-card{width:min(940px,100%)}
+.visit-record-hero{
+  display:flex;align-items:flex-start;justify-content:space-between;gap:24px;
+  padding:28px 30px 22px;border-bottom:1px solid #ececf0
+}
+.visit-record-heading{min-width:0}
+.visit-record-heading h2{margin:5px 0 4px;color:var(--navy);font-size:26px;letter-spacing:-.025em}
+.visit-record-heading p{margin:0;color:var(--muted);font-size:11px}
+.visit-record-status{display:grid;justify-items:end;gap:14px;padding-right:38px}
+.visit-record-duration{text-align:right}
+.visit-record-duration span{display:block;color:var(--muted);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+.visit-record-duration strong{display:block;margin-top:3px;color:var(--navy);font-size:18px}
+.visit-record-strip{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  border-bottom:1px solid #ececf0;background:#fafafd
+}
+.visit-record-strip>div{padding:14px 18px;border-right:1px solid #ececf0;min-width:0}
+.visit-record-strip>div:last-child{border-right:0}
+.visit-record-strip span{display:block;color:var(--muted);font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.06em}
+.visit-record-strip strong{display:block;margin-top:4px;color:#35353e;font-size:11px;overflow-wrap:anywhere}
+.visit-record-body{display:grid;grid-template-columns:minmax(0,1fr) 280px;align-items:start}
+.visit-record-main{min-width:0;padding:24px 26px 26px}
+.visit-record-aside{
+  align-self:stretch;padding:24px 22px;border-left:1px solid #ececf0;background:#fafafd
+}
+.visit-record-section+.visit-record-section{margin-top:25px;padding-top:22px;border-top:1px solid #ececf0}
+.visit-record-section-head h3{margin:4px 0 0;color:var(--navy);font-size:15px}
+.visit-record-details{
+  grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:14px;background:transparent
+}
+.visit-record-details .visit-detail-item{padding:13px 14px;border-radius:10px;background:#f6f7f9}
+.visit-record-details .visit-detail-item.is-wide{grid-column:1/-1}
+.visit-record-notes .visit-note{margin-top:12px;padding:13px 14px;border-left:3px solid var(--navy);background:#f6f7f9}
+.visit-record-aside .visit-field-timeline{margin-top:16px}
+.visit-record-aside .field-timeline-item{grid-template-columns:17px 1fr;padding-bottom:16px}
+.visit-record-actions{border-top:1px solid #ececf0}
+
+/* Modal de relatório — leitura documental */
+.report-document-card{width:min(1000px,100%)}
+.report-document-hero{
+  display:flex;align-items:flex-start;justify-content:space-between;gap:22px;
+  padding:28px 66px 21px 30px;border-bottom:1px solid #e8e8ed;background:#fff
+}
+.report-document-hero h2{margin:5px 0 4px;color:var(--navy);font-size:26px;letter-spacing:-.025em}
+.report-document-hero p{margin:0;color:var(--muted);font-size:11px}
+.report-document-meta{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+  border-bottom:1px solid #e6e6eb;background:#fafafd
+}
+.report-document-meta .visit-detail-item{
+  padding:13px 16px;border-right:1px solid #e6e6eb;background:transparent
+}
+.report-document-meta .visit-detail-item:last-child{border-right:0}
+.report-document-body{padding:22px 24px 28px;background:#f3f4f6}
+.report-primary-section,.report-support-section,.report-assistance-document{
+  background:#fff
+}
+.report-primary-section{padding:24px 26px}
+.report-support-section{margin-top:12px;padding:22px 24px}
+.report-section-heading{padding-bottom:13px;border-bottom:1px solid #ececf0}
+.report-section-heading h3{margin:4px 0 0;color:var(--navy);font-size:16px}
+.report-current-text{margin-top:18px;color:#32323b;font-size:12px;line-height:1.72}
+.report-fields{
+  grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:16px;background:transparent
+}
+.report-fields .visit-detail-item{padding:13px 14px;border-radius:9px;background:#f7f8fa}
+.report-fields .visit-detail-item.is-wide{grid-column:1/-1}
+.report-history{margin-top:15px}
+.report-history-item{border:1px solid #ececf0;background:#fafafd}
+.report-assistance-document{padding:24px 26px}
+.report-assistance-document .admin-assistance-section{
+  margin:0;padding:0 0 23px;border-bottom:1px solid #ececf0
+}
+.report-assistance-document .admin-assistance-section+.admin-assistance-section{padding-top:23px}
+.report-assistance-document .admin-assistance-section:last-child{padding-bottom:0;border-bottom:0}
+.report-document-actions{border-top:1px solid #e8e8ed}
+
+@media(max-width:760px){
+  .profile-action-group{width:100%;flex-wrap:wrap}
+  .profile-actions:has(.profile-action-group){align-items:stretch;flex-direction:column}
+  .profile-actions:has(.profile-action-group)>button{width:100%}
+  .profile-action-group>button{flex:1;min-width:140px}
+
+  .visit-record-hero,.report-document-hero{padding:22px 54px 18px 18px}
+  .visit-record-hero{flex-direction:column;gap:13px}
+  .visit-record-status{justify-items:start;padding-right:0}
+  .visit-record-duration{text-align:left}
+  .visit-record-strip{grid-template-columns:1fr}
+  .visit-record-strip>div{border-right:0;border-bottom:1px solid #ececf0}
+  .visit-record-strip>div:last-child{border-bottom:0}
+  .visit-record-body{grid-template-columns:1fr}
+  .visit-record-main{padding:20px 18px}
+  .visit-record-aside{padding:20px 18px;border-left:0;border-top:1px solid #ececf0}
+  .visit-record-details{grid-template-columns:1fr}
+  .visit-record-details .visit-detail-item.is-wide{grid-column:auto}
+  .visit-record-actions{align-items:stretch;flex-direction:column}
+  .visit-record-actions .profile-action-group{display:grid;grid-template-columns:1fr}
+
+  .report-document-meta{grid-template-columns:1fr 1fr}
+  .report-document-meta .visit-detail-item:nth-child(2n){border-right:0}
+  .report-document-meta .visit-detail-item{border-bottom:1px solid #e6e6eb}
+  .report-document-body{padding:12px}
+  .report-primary-section,.report-support-section,.report-assistance-document{padding:18px}
+  .report-fields{grid-template-columns:1fr}
+  .report-fields .visit-detail-item.is-wide{grid-column:auto}
+}
