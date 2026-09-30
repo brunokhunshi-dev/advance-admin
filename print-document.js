@@ -86,9 +86,30 @@ export function printDocument(spec,popup=null){
     .timeline-item b{color:#061b52}
     .timeline-item small{display:block;color:#777782}
     .report-block{margin:0 0 3mm;white-space:pre-wrap;overflow-wrap:anywhere}
-    .attachment{margin:5mm 0;padding:4mm;border:1px solid #dedfe5;break-inside:avoid}
-    .attachment img{display:block;max-width:100%;max-height:150mm;margin:0 auto;object-fit:contain}
-    .attachment figcaption{margin-top:2.5mm;color:#6d6d76;font-size:8pt;text-align:center}
+    .attachment{
+        width:min(100mm,100%);
+        margin:4mm auto;
+        padding:3mm;
+        border:1px solid #dedfe5;
+        break-inside:avoid;
+        background:#fff
+    }
+    .attachment img{
+        display:block;
+        width:auto;
+        height:auto;
+        max-width:88mm;
+        max-height:68mm;
+        margin:0 auto;
+        object-fit:contain
+    }
+    .attachment figcaption{
+        margin-top:2mm;
+        color:#6d6d76;
+        font-size:7.5pt;
+        text-align:center;
+        overflow-wrap:anywhere
+    }
     .signature-grid{display:grid;grid-template-columns:1fr 1fr;gap:18mm;margin-top:15mm}
     .signature{padding-top:3mm;border-top:1px solid #909099;text-align:center;color:#686871;font-size:8pt}
     .doc-footer{display:flex;justify-content:space-between;gap:8mm;margin-top:10mm;padding-top:4mm;border-top:1px solid #dedfe5;color:#8a8a93;font-size:7.5pt}
@@ -100,7 +121,8 @@ export function printDocument(spec,popup=null){
     }
     @media print{
         a{color:inherit;text-decoration:none}
-        .doc-section,.field,.attachment,tr{break-inside:avoid}
+        .field,.attachment,tr{break-inside:avoid}
+        .doc-section{break-inside:auto}
     }
 </style>
 </head>
