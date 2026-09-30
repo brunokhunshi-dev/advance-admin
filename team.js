@@ -2,6 +2,7 @@ import { app, $, db, collection, getDocs, requireAdmin, setupLayout, escapeHtml,
 import { doc, setDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-functions.js";
 import { firebaseConfig } from "./firebase-config.js";
+import { printDocument } from "./print-document.js";
 
 const functions=getFunctions(app);
 const requestDeletion=httpsCallable(functions,"requestTeamMemberDeletion");
@@ -264,5 +265,68 @@ async function createMember(e){
 function openDelete(){if(!selectedMember)return;deleteRequestId=null;$("#delete-email").textContent=selectedMember.email||"e-mail não cadastrado";$("#delete-code").value="";$("#delete-request-step").hidden=false;$("#delete-code-step").hidden=true;$("#delete-message").textContent="";closeModal("manage");openModal("delete")}
 async function sendDeleteCode(){if(!selectedMember)return;const b=$("#send-delete-code");b.disabled=true;b.textContent="Enviando...";try{const r=await requestDeletion({collection:selectedMember.collection,memberId:selectedMember.id});deleteRequestId=r.data.requestId;$("#delete-request-step").hidden=true;$("#delete-code-step").hidden=false;$("#delete-code-hint").textContent="Código enviado para "+(r.data.maskedEmail||selectedMember.email)+". Válido por 10 minutos."}catch(e){$("#delete-message").textContent=e.message||"Não foi possível enviar o código."}finally{b.disabled=false;b.textContent="Enviar código de confirmação"}}
 async function confirmDelete(){const code=$("#delete-code").value.replace(/\D/g,"").slice(0,6);if(!deleteRequestId||code.length!==6){$("#delete-message").textContent="Digite o código de 6 dígitos.";return}try{await confirmDeletion({requestId:deleteRequestId,code});await loadData();closeModal("delete");selectedMember=null}catch(e){$("#delete-message").textContent=e.message||"Não foi possível confirmar a exclusão."}}
-function bindEvents(){document.querySelectorAll("[data-team-tab]").forEach(b=>b.addEventListener("click",()=>{activeTab=b.dataset.teamTab;document.querySelectorAll("[data-team-tab]").forEach(t=>{const on=t===b;t.classList.toggle("active",on);t.setAttribute("aria-selected",String(on))});renderTable()}));$("#team-search").addEventListener("input",renderTable);$("#refresh-team").addEventListener("click",loadData);$("#new-member").addEventListener("click",openNewMember);$("#new-member-team").addEventListener("change",e=>{$("#new-member-role").value=e.target.value==="promotores"?"Promotor Técnico":"Assistente Técnico"});$("#new-member-form").addEventListener("submit",createMember);document.querySelectorAll(".comparison-list").forEach(list=>list.addEventListener("click",e=>{const b=e.target.closest("[data-compare-profile]");if(!b)return;const m=findMember(b.dataset.compareProfile);if(m)openProfile(m)}));$("#team-table-body").addEventListener("click",e=>{const b=e.target.closest("[data-action]");if(!b)return;const m=findMember(b.dataset.id);if(b.dataset.action==="profile")openProfile(m);else if(b.dataset.action==="manage")openManage(m)});document.querySelectorAll("[data-close-modal]").forEach(b=>b.addEventListener("click",()=>closeModal(b.dataset.closeModal)));$("#profile-manage").addEventListener("click",()=>selectedMember&&openManage(selectedMember));$("#manage-form").addEventListener("submit",saveMember);$("#manage-active").addEventListener("change",()=>$("#manage-active-label").textContent=$("#manage-active").checked?"Ativo":"Inativo");$("#delete-user").addEventListener("click",openDelete);$("#send-delete-code").addEventListener("click",sendDeleteCode);$("#resend-delete-code").addEventListener("click",sendDeleteCode);$("#confirm-delete-user").addEventListener("click",confirmDelete);$("#delete-code").addEventListener("input",e=>e.target.value=e.target.value.replace(/\D/g,"").slice(0,6));document.addEventListener("keydown",e=>{if(e.key==="Escape")["delete","manage","profile","new-member"].forEach(closeModal)})}
+function exportMemberPdf(){
+    if(!selectedMember)return;
+    const m=selectedMember;
+    const stats=memberStats(m);
+    const recent=stats.list;
+    const last7=[];
+    const today=new Date();
+    for(let i=6;i>=0;i--){
+        const d=new Date(today);
+        d.setHours(0,0,0,0);
+        d.setDate(d.getDate()-i);
+        const next=new Date(d);
+        next.setDate(next.getDate()+1);
+        last7.push({
+            label:d.toLocaleDateString("pt-BR",{weekday:"short",day:"2-digit",month:"2-digit"}).replace(".",""),
+            count:recent.filter(a=>{const date=asDate(a.data);return date&&date>=d&&date<next}).length
+        });
+    }
+
+    const activityRows=recent.map(a=>{
+        const client=clients.get(a.clienteId);
+        return '<tr><td>'+escapeHtml(formatDateTime(a.data))+'</td><td>'+escapeHtml(normalizeVisitType(a))+'</td><td>'+escapeHtml(client?.nome||"Cliente não encontrado")+'</td><td>'+escapeHtml(a.status||"—")+'</td><td>'+escapeHtml(formatDuration(activityDurationMinutes(a)))+'</td></tr>';
+    }).join("");
+
+    printDocument({
+        kicker:m.collection==="promotores"?"Perfil profissional • Promotoria":"Perfil profissional • Assistência",
+        title:m.nome||"Profissional",
+        subtitle:memberRole(m),
+        badge:memberActive(m)?"Ativo":"Inativo",
+        meta:[
+            {label:"E-mail",value:m.email||"Não cadastrado"},
+            {label:"Telefone",value:m.telefone||"Não cadastrado"},
+            {label:"Visitas",value:String(stats.total)},
+            {label:"Conclusão",value:Math.round(stats.completion)+"%"}
+        ],
+        sections:[
+            {
+                eyebrow:"Resumo operacional",
+                title:"Indicadores do profissional",
+                html:'<div class="field-grid">'+
+                    '<div class="field"><span>Concluídas</span><strong>'+stats.completed+'</strong></div>'+
+                    '<div class="field"><span>Tempo em campo</span><strong>'+escapeHtml(formatDuration(stats.totalMinutes))+'</strong></div>'+
+                    '<div class="field"><span>Média por visita</span><strong>'+escapeHtml(formatDuration(stats.averageMinutes))+'</strong></div>'+
+                    '<div class="field"><span>Clientes atendidos</span><strong>'+stats.uniqueClients+'</strong></div>'+
+                    '<div class="field wide"><span>Última atividade</span><strong>'+escapeHtml(stats.lastActivity?formatDateTime(stats.lastActivity):"—")+'</strong></div>'+
+                '</div>'
+            },
+            {
+                eyebrow:"Últimos 7 dias",
+                title:"Ritmo de atividades",
+                html:'<table><thead><tr><th>Dia</th><th>Atividades</th></tr></thead><tbody>'+last7.map(item=>'<tr><td>'+escapeHtml(item.label)+'</td><td>'+item.count+'</td></tr>').join("")+'</tbody></table>'
+            },
+            {
+                eyebrow:"Histórico",
+                title:"Visitas registradas",
+                html:activityRows
+                    ?'<table><thead><tr><th>Data</th><th>Tipo</th><th>Cliente</th><th>Status</th><th>Duração</th></tr></thead><tbody>'+activityRows+'</tbody></table>'
+                    :'<p class="prose">Nenhuma atividade registrada.</p>'
+            }
+        ]
+    });
+}
+
+function bindEvents(){document.querySelectorAll("[data-team-tab]").forEach(b=>b.addEventListener("click",()=>{activeTab=b.dataset.teamTab;document.querySelectorAll("[data-team-tab]").forEach(t=>{const on=t===b;t.classList.toggle("active",on);t.setAttribute("aria-selected",String(on))});renderTable()}));$("#team-search").addEventListener("input",renderTable);$("#refresh-team").addEventListener("click",loadData);$("#new-member").addEventListener("click",openNewMember);$("#new-member-team").addEventListener("change",e=>{$("#new-member-role").value=e.target.value==="promotores"?"Promotor Técnico":"Assistente Técnico"});$("#new-member-form").addEventListener("submit",createMember);document.querySelectorAll(".comparison-list").forEach(list=>list.addEventListener("click",e=>{const b=e.target.closest("[data-compare-profile]");if(!b)return;const m=findMember(b.dataset.compareProfile);if(m)openProfile(m)}));$("#team-table-body").addEventListener("click",e=>{const b=e.target.closest("[data-action]");if(!b)return;const m=findMember(b.dataset.id);if(b.dataset.action==="profile")openProfile(m);else if(b.dataset.action==="manage")openManage(m)});document.querySelectorAll("[data-close-modal]").forEach(b=>b.addEventListener("click",()=>closeModal(b.dataset.closeModal)));$("#profile-export-pdf").addEventListener("click",exportMemberPdf);$("#profile-manage").addEventListener("click",()=>selectedMember&&openManage(selectedMember));$("#manage-form").addEventListener("submit",saveMember);$("#manage-active").addEventListener("change",()=>$("#manage-active-label").textContent=$("#manage-active").checked?"Ativo":"Inativo");$("#delete-user").addEventListener("click",openDelete);$("#send-delete-code").addEventListener("click",sendDeleteCode);$("#resend-delete-code").addEventListener("click",sendDeleteCode);$("#confirm-delete-user").addEventListener("click",confirmDelete);$("#delete-code").addEventListener("input",e=>e.target.value=e.target.value.replace(/\D/g,"").slice(0,6));document.addEventListener("keydown",e=>{if(e.key==="Escape")["delete","manage","profile","new-member"].forEach(closeModal)})}
 (async()=>{try{const{user,admin}=await requireAdmin();setupLayout("team",admin,user);bindEvents();await loadData();const memberId=new URLSearchParams(location.search).get("member");if(memberId){const member=findMember(memberId);if(member&&memberActive(member))openProfile(member)}}catch(e){console.error(e);$("#team-table-body").innerHTML='<tr><td colspan="8" class="empty-row">Não foi possível carregar a equipe.</td></tr>'}})();
