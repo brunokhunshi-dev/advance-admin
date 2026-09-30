@@ -1,5 +1,6 @@
 import { $, db, collection, getDocs, requireAdmin, setupLayout, escapeHtml, asDate, formatDateTime, formatDuration, normalizeVisitType } from "./core.js";
 import { doc, setDoc, updateDoc, serverTimestamp, query, where } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
+import { printDocument } from "./print-document.js";
 
 const ADVANCE_ADDRESS="Rua Alberto Guizo, 489, Distrito Industrial João Narezzi, Indaiatuba, SP, Brasil";
 const IMPORTANCE_ORDER={"Estratégico":4,"Alta":3,"Média":2,"Baixa":1,"Não definida":0};
@@ -75,12 +76,67 @@ function openNewClient(){registerMode="cnpj";$("#new-client-form").reset();$("#n
 function openDeleteClient(){if(!selectedClient)return;$("#delete-client-message").textContent="";closeModal("edit-client");openModal("delete-client")}
 async function confirmDeleteClient(){if(!selectedClient)return;const b=$("#confirm-delete-client");b.disabled=true;b.textContent="Excluindo...";try{await updateDoc(doc(db,"clientes",selectedClient.id),{status:"Inativo",excluidoEm:serverTimestamp(),excluidoPor:currentAdmin.uid,atualizadoEm:serverTimestamp()});selectedClient.status="Inativo";renderAll();closeModal("delete-client");selectedClient=null}catch(e){console.error(e);$("#delete-client-message").textContent=e.message||"Não foi possível excluir o cliente."}finally{b.disabled=false;b.textContent="Excluir cliente"}}
 
+function exportClientPdf(){
+    if(!selectedClient)return;
+    const client=selectedClient;
+    const stats=clientStats(client);
+    const rows=stats.list.map(activity=>{
+        const professional=people.get(activity.ptvId);
+        return '<tr><td>'+escapeHtml(formatDateTime(activity.data))+'</td><td>'+escapeHtml(normalizeVisitType(activity))+'</td><td>'+escapeHtml(professional?.nome||activity.ptvId||"Profissional não identificado")+'</td><td>'+escapeHtml(activity.status||"—")+'</td><td>'+escapeHtml(formatDuration(durationMinutes(activity)))+'</td></tr>';
+    }).join("");
+
+    printDocument({
+        kicker:"Perfil de cliente",
+        title:client.nome||"Cliente",
+        subtitle:client.enderecoCompleto||"Endereço não informado",
+        badge:normalizeStatus(client.status),
+        meta:[
+            {label:"Cidade",value:(client.cidade||"—")+(client.uf?" / "+client.uf:"")},
+            {label:"Importância",value:clientImportance(client)},
+            {label:"Distância da Advance",value:distanceLabel(client)},
+            {label:"Cadastro",value:client.codigoCnpj?"CNPJ vinculado • "+client.codigoCnpj:"Sem CNPJ"}
+        ],
+        sections:[
+            {
+                eyebrow:"Resumo operacional",
+                title:"Indicadores do cliente",
+                html:'<div class="field-grid">'+
+                    '<div class="field"><span>Visitas</span><strong>'+stats.total+'</strong></div>'+
+                    '<div class="field"><span>Concluídas</span><strong>'+stats.completed+'</strong></div>'+
+                    '<div class="field"><span>Tempo em campo</span><strong>'+escapeHtml(formatDuration(stats.totalMinutes))+'</strong></div>'+
+                    '<div class="field"><span>Média por visita</span><strong>'+escapeHtml(formatDuration(stats.average))+'</strong></div>'+
+                    '<div class="field"><span>Profissionais envolvidos</span><strong>'+stats.professionals+'</strong></div>'+
+                    '<div class="field"><span>Última visita</span><strong>'+escapeHtml(stats.last?formatDateTime(stats.last):"—")+'</strong></div>'+
+                '</div>'
+            },
+            {
+                eyebrow:"Cadastro",
+                title:"Informações do cliente",
+                html:'<div class="field-grid">'+
+                    '<div class="field wide"><span>Endereço</span><strong>'+escapeHtml(client.enderecoCompleto||"Não informado")+'</strong></div>'+
+                    '<div class="field"><span>Cidade / UF</span><strong>'+escapeHtml((client.cidade||"—")+(client.uf?" / "+client.uf:""))+'</strong></div>'+
+                    '<div class="field"><span>Status</span><strong>'+escapeHtml(normalizeStatus(client.status))+'</strong></div>'+
+                    '<div class="field"><span>Importância</span><strong>'+escapeHtml(clientImportance(client))+'</strong></div>'+
+                    '<div class="field"><span>Distância</span><strong>'+escapeHtml(distanceLabel(client))+'</strong></div>'+
+                '</div>'
+            },
+            {
+                eyebrow:"Histórico",
+                title:"Visitas registradas",
+                html:rows
+                    ?'<table><thead><tr><th>Data</th><th>Tipo</th><th>Profissional</th><th>Status</th><th>Duração</th></tr></thead><tbody>'+rows+'</tbody></table>'
+                    :'<p class="prose">Nenhuma visita registrada para este cliente.</p>'
+            }
+        ]
+    });
+}
+
 function bindEvents(){
 $("#client-search").addEventListener("input",renderTable);$("#only-active-clients").addEventListener("change",renderTable);$("#refresh-clients").addEventListener("click",loadData);$("#new-client").addEventListener("click",openNewClient);
 $("#clients-table").addEventListener("click",e=>{const b=e.target.closest("[data-client-action]");if(!b)return;const c=findClient(b.dataset.id);if(!c)return;if(b.dataset.clientAction==="profile")openProfile(c);else openEdit(c)});
 $("#clients-table").addEventListener("change",e=>{const select=e.target.closest("[data-importance-id]");if(select)updateImportance(select.dataset.importanceId,select.value)});
 document.querySelectorAll("[data-close-client-modal]").forEach(b=>b.addEventListener("click",()=>closeModal(b.dataset.closeClientModal)));
-$("#edit-client-from-profile").addEventListener("click",()=>selectedClient&&openEdit(selectedClient));$("#edit-client-form").addEventListener("submit",saveClient);$("#delete-client").addEventListener("click",openDeleteClient);$("#confirm-delete-client").addEventListener("click",confirmDeleteClient);
+$("#client-export-pdf").addEventListener("click",exportClientPdf);$("#edit-client-from-profile").addEventListener("click",()=>selectedClient&&openEdit(selectedClient));$("#edit-client-form").addEventListener("submit",saveClient);$("#delete-client").addEventListener("click",openDeleteClient);$("#confirm-delete-client").addEventListener("click",confirmDeleteClient);
 document.querySelectorAll("[data-client-mode]").forEach(b=>b.addEventListener("click",()=>setRegisterMode(b.dataset.clientMode)));$("#lookup-cnpj").addEventListener("click",lookupCnpj);$("#new-client-cnpj").addEventListener("blur",()=>{const raw=$("#new-client-cnpj").value.replace(/\D/g,"");if(raw.length===14)lookupCnpj()});$("#lookup-cep").addEventListener("click",lookupCep);$("#new-client-cep").addEventListener("blur",()=>{if($("#new-client-cep").value.replace(/\D/g,"").length===8)lookupCep()});$("#new-client-form").addEventListener("submit",createClient);
 document.addEventListener("keydown",e=>{if(e.key==="Escape")["client-profile","edit-client","new-client","delete-client"].forEach(closeModal)});
 }
