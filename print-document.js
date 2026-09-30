@@ -27,7 +27,7 @@ export function printDocument(spec,popup=null){
     const generatedAt=escapeText(spec?.generatedAt||new Date().toLocaleString("pt-BR"));
     const meta=Array.isArray(spec?.meta)?spec.meta:[];
     const sections=Array.isArray(spec?.sections)?spec.sections:[];
-    const logoUrl=new URL("./midia/logo-advancecheck.svg",window.location.href).href;
+    const logoUrl=new URL("../midia/logo-advancecheck.svg",window.location.href).href;
 
     const metaHtml=meta.length?`<section class="meta-grid">${meta.map(item=>`
         <div class="meta-item"><span>${escapeText(item?.label||"")}</span><strong>${escapeText(item?.value||"—")}</strong></div>
